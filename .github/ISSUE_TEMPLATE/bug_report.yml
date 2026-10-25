@@ -1,0 +1,62 @@
+name: Bug report
+description: Something doesn't work or shows wrong numbers.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! English or Spanish are both fine (*también en español*).
+        **Security problems:** don't report them here — see [SECURITY.md](https://github.com/RodrigoRivera/claude-code-stats-widget/blob/main/SECURITY.md).
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you see, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the widget
+        2. Click the Total tab
+        3. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where does it happen?
+      multiple: true
+      options:
+        - Panel (Edge or browser)
+        - Panel (window opened from the widget)
+        - Desktop widget
+        - Tray menu
+        - Launchers (.vbs / .bat)
+        - Installation
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Claude Stats version
+      description: The release you downloaded, or the commit if you cloned the repo.
+      placeholder: v1.0.0
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      placeholder: Windows 11 24H2
+  - type: input
+    id: node
+    attributes:
+      label: Node.js version
+      description: Output of `node -v`.
+      placeholder: v24.0.0
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots or extra details
+      description: Screenshots help a lot. Please hide project names you don't want to share.

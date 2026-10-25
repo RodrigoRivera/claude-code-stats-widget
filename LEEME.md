@@ -106,5 +106,8 @@ Si lo prefieres a mano: `Win + R` → `shell:startup` → pega ahí un acceso di
 ## Opcional
 - **Cambiar el nombre del saludo o el puerto:** variables de entorno `CLAUDE_STATS_NAME` y `CLAUDE_STATS_PORT`. Por defecto el saludo usa el nombre de tu cuenta de Claude; si no lo encuentra, dice solo "¿Qué sigue?".
 
+## Contribuir
+Los reportes de errores, ideas y pull requests son bienvenidos, en español o en inglés. Para empezar, mira [CONTRIBUTING.md](CONTRIBUTING.md) (en inglés), el [código de conducta](CODE_OF_CONDUCT.md) y [SECURITY.md](SECURITY.md) para reportar un problema de seguridad en privado. Los cambios de cada versión están en el [CHANGELOG](CHANGELOG.md).
+
 ## Licencia
 [MIT](LICENSE).

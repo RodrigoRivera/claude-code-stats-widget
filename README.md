@@ -100,5 +100,8 @@ Nothing leaves your computer.
 - `widget/` — the Electron desktop widget (`main.js`, `preload.js`). The only folder with an npm dependency (`electron`, pinned).
 - `*.vbs` / `*.bat` — Windows launchers.
 
+## Contributing
+Bug reports, ideas and pull requests are welcome, in English or Spanish. See [CONTRIBUTING.md](CONTRIBUTING.md) to get started, the [Code of Conduct](CODE_OF_CONDUCT.md), and [SECURITY.md](SECURITY.md) to report a security problem privately. Changes are listed in the [CHANGELOG](CHANGELOG.md).
+
 ## License
 [MIT](LICENSE).
