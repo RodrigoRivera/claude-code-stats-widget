@@ -1,0 +1,16 @@
+{
+  "name": "claude-code-stats-widget",
+  "productName": "Claude Stats",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Desktop widget for Claude Stats (unofficial, not affiliated with Anthropic).",
+  "license": "MIT",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "postinstall": "install-electron"
+  },
+  "devDependencies": {
+    "electron": "44.7.0"
+  }
+}

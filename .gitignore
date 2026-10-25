@@ -1,0 +1,17 @@
+# Dependencias del widget (se instalan con "npm install" dentro de widget/)
+node_modules/
+
+# Material de referencia local: foto de la app de Anthropic y captura de un
+# plugin de otra persona. No se publican.
+referencia/
+
+# Notas de desarrollo con datos personales (proyectos, horas, rutas)
+PLAN.md
+CLAUDE.md
+
+# Varios
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+desktop.ini

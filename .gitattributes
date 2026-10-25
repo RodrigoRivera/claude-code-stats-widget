@@ -1,0 +1,4 @@
+# Los lanzadores de Windows van tal cual: CRLF y, los .vbs, en ANSI (VBScript no lee UTF-8).
+# Así git no les cambia los finales de línea al clonar en otro PC.
+*.vbs -text
+*.bat -text

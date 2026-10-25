@@ -1,0 +1,1030 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Stats</title>
+<meta name="theme-color" content="#2b2d31">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="256x256" href="/icono.png">
+<link rel="apple-touch-icon" href="/icono.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232b2d31'/%3E%3Cg fill='%2357b6ee'%3E%3Crect x='6' y='6' width='5' height='5' rx='1'/%3E%3Crect x='13' y='6' width='5' height='5' rx='1' opacity='.5'/%3E%3Crect x='20' y='6' width='5' height='5' rx='1'/%3E%3Crect x='6' y='13' width='5' height='5' rx='1' opacity='.5'/%3E%3Crect x='13' y='13' width='5' height='5' rx='1'/%3E%3Crect x='20' y='13' width='5' height='5' rx='1' opacity='.7'/%3E%3Crect x='6' y='20' width='5' height='5' rx='1'/%3E%3Crect x='13' y='20' width='5' height='5' rx='1' opacity='.7'/%3E%3Crect x='20' y='20' width='5' height='5' rx='1'/%3E%3C/g%3E%3C/svg%3E">
+<style>
+  :root {
+    --page: #2b2d31;
+    --card: #3c3e44;
+    --tile: #4a4c53;
+    --tile-hover: #52545b;
+    --pill-on: #5c5f66;
+    --empty: #55585e;
+    --text: #ececee;
+    --muted: #a4a6ad;
+    --faint: #85878e;
+    --l1: #a9dcf6;
+    --l2: #7ccaf2;
+    --l3: #4fb3ec;
+    --l4: #2b8fdf;
+    --clay: #d97757;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--page); color: var(--text); }
+  body {
+    font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    display: flex; justify-content: center;
+    padding: 56px 24px 40px;
+    -webkit-font-smoothing: antialiased;
+  }
+  main { width: 100%; max-width: 620px; }
+  h1 {
+    display: flex; align-items: center; gap: 12px;
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 400; font-size: 30px; letter-spacing: -0.3px;
+    margin: 0 0 30px 4px;
+  }
+  h1 svg { width: 30px; height: 30px; flex: none; }
+
+  .card { background: var(--card); border-radius: 12px; padding: 14px; }
+  .bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .bar .right { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+  /* Filtro por proyecto: se ve como un botón más de la barra */
+  .pick {
+    font: inherit; font-size: 13px; color: var(--muted); appearance: none;
+    background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M2 3.5 5 6.5 8 3.5' fill='none' stroke='%23a4a6ad' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 7px center / 10px;
+    border: 0; border-radius: 7px; padding: 5px 22px 5px 10px; max-width: 170px;
+    text-overflow: ellipsis; cursor: pointer; transition: background-color .15s, color .15s;
+  }
+  .pick:hover { color: var(--text); }
+  .pick:focus-visible { outline: 2px solid var(--l3); outline-offset: 1px; }
+  .pick.on { background-color: var(--pill-on); color: var(--text); font-weight: 600; }
+  .pick option { background: #1d1e21; color: var(--text); font-weight: 400; }
+  .seg { display: flex; gap: 4px; }
+  .seg button {
+    font: inherit; font-size: 13px; color: var(--muted);
+    background: transparent; border: 0; border-radius: 7px;
+    padding: 5px 10px; cursor: pointer; transition: background .15s, color .15s;
+  }
+  .seg button:hover { color: var(--text); }
+  .seg button.on { background: var(--pill-on); color: var(--text); font-weight: 600; }
+
+  .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-bottom: 12px; }
+  .stat { background: var(--tile); border-radius: 8px; padding: 8px 11px 10px; transition: background .15s; }
+  .stat:hover { background: var(--tile-hover); }
+  .stat .k { font-size: 13.5px; color: var(--muted); margin-bottom: 2px; }
+  .stat .v { font-size: 18.5px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .grid {
+    display: grid; grid-auto-flow: column;
+    grid-template-rows: repeat(7, auto);
+    gap: 6px; padding: 2px;
+  }
+  .cell {
+    aspect-ratio: 1; border-radius: 3px; background: var(--empty);
+    position: relative; cursor: default;
+    opacity: 0; transform: scale(.6);
+    animation: pop .35s cubic-bezier(.2,.8,.3,1.2) forwards;
+    transition: box-shadow .12s, filter .3s, background-color .3s;
+  }
+  .cell.future { visibility: hidden; }
+  .cell.out { filter: brightness(.6) saturate(.4); }
+  .cell.l1 { background: var(--l1); }
+  .cell.l2 { background: var(--l2); }
+  .cell.l3 { background: var(--l3); }
+  .cell.l4 { background: var(--l4); }
+  .cell:hover { box-shadow: 0 0 0 2px rgba(255,255,255,.75); z-index: 1; }
+  .cell.today { box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.35); }
+  @keyframes pop { to { opacity: 1; transform: none; } }
+
+  .foot { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 12.5px; color: var(--muted); margin: 12px 2px 2px; }
+  .metric { flex: none; color: var(--faint); white-space: nowrap; }
+  .metric button { font: inherit; color: var(--faint); background: none; border: 0; padding: 0 1px; cursor: pointer; }
+  .metric button:hover { color: var(--text); }
+  .metric button.on { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+  /* Idioma: debajo de la tarjeta, discreto, con el mismo estilo que «Color» */
+  .langs { text-align: center; margin-top: 14px; font-size: 12px; color: var(--faint); }
+  .langs button { font: inherit; color: var(--faint); background: none; border: 0; padding: 0 2px; cursor: pointer; }
+  .langs button:hover { color: var(--text); }
+  .langs button.on { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+
+  /* Detalle de un día (clic en un cuadrito) */
+  .cell.sel, .cell.sel:hover { box-shadow: 0 0 0 2px #fff; z-index: 1; }
+  .grid .cell:not(.future) { cursor: pointer; }
+  .daydetail { background: var(--tile); border-radius: 8px; padding: 10px 12px 11px; margin-top: 12px; animation: drop .2s ease-out; }
+  .daydetail .head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+  .daydetail .head b { font-size: 14.5px; }
+  .daydetail .head span, .daydetail .note { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .dps { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 2fr) auto; gap: 7px 12px; align-items: center; font-size: 13px; }
+  .dp { display: contents; }
+  .dp .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dp .m { color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+  @keyframes drop { from { opacity: 0; transform: translateY(-4px); } }
+
+  .tip {
+    position: fixed; pointer-events: none; z-index: 10;
+    background: #1d1e21; color: var(--text);
+    border: 1px solid #44464c; border-radius: 8px;
+    padding: 7px 10px; font-size: 12.5px; line-height: 1.35;
+    box-shadow: 0 6px 20px rgba(0,0,0,.35);
+    opacity: 0; transform: translateY(4px); transition: opacity .1s, transform .1s;
+    white-space: nowrap;
+  }
+  .tip.show { opacity: 1; transform: none; }
+  .tip b { font-size: 14px; font-variant-numeric: tabular-nums; }
+  .tip span { color: var(--muted); }
+
+  .models { display: flex; flex-direction: column; gap: 8px; }
+  .model { background: var(--tile); border-radius: 9px; padding: 11px 12px; }
+  .model .row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+  .model .name { font-weight: 600; font-size: 14.5px; }
+  .model .meta { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .track { height: 6px; border-radius: 3px; background: var(--empty); overflow: hidden; }
+  .track i { display: block; height: 100%; border-radius: 3px; background: var(--l3); width: 0; transition: width .6s cubic-bezier(.2,.8,.3,1); }
+
+  /* Pestaña Proyectos */
+  .stats4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .subbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0 2px 8px; font-size: 12.5px; color: var(--muted); }
+  .seg.small button { font-size: 12.5px; padding: 3px 8px; }
+  .proj { cursor: pointer; transition: background .15s; }
+  .proj:hover { background: var(--tile-hover); }
+  .proj:focus-visible { outline: 2px solid var(--l3); outline-offset: 2px; }
+  .proj .row { flex-wrap: wrap; }
+  .proj .name { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .proj .name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chev { width: 12px; height: 12px; flex: none; color: var(--faint); transition: transform .2s; }
+  .proj.open .chev { transform: rotate(90deg); }
+  .detail { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-top: 12px; cursor: default; }
+  .mini { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 15px); grid-auto-columns: 15px; gap: 4px; }
+  .detail .meta { line-height: 1.6; }
+
+  .empty-msg { color: var(--muted); font-size: 14px; padding: 28px 8px; text-align: center; line-height: 1.6; }
+  .empty-msg code { color: var(--text); background: var(--tile); padding: 1px 6px; border-radius: 5px; }
+
+  /* Animaciones suaves al cambiar de pestaña y de rango */
+  .pane-in { animation: pane-in .22s ease-out; }
+  @keyframes pane-in { from { opacity: 0; transform: translateY(4px); } }
+  .stat .v.tick { animation: tick .32s ease-out; }
+  @keyframes tick { from { opacity: .2; transform: translateY(3px); } }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0ms !important; transition-duration: .01ms !important; }
+  }
+
+  @media (max-width: 560px) {
+    body { padding-top: 28px; }
+    .stats, .stats4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  /* Modo widget (/?widget=1): caja semitransparente que llena la ventana */
+  html:not(.widget) #widget { display: none; }
+  html.widget, html.widget body { background: transparent; }
+  html.widget body { display: block; min-height: 0; height: 100vh; padding: 0; overflow: hidden; user-select: none; }
+  html.widget main { display: none; }
+  .wbox {
+    position: fixed; inset: 0; display: flex; flex-direction: column; gap: 10px;
+    padding: 11px 14px 12px; overflow: hidden; cursor: default;
+    background: rgba(43, 45, 49, .82); border: 1px solid rgba(255, 255, 255, .09); border-radius: 12px;
+  }
+  .wstats { flex: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .wstats .k, .wstats .v { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wstats .k { font-size: 11.5px; color: var(--muted); }
+  .wstats .v { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  /* Pestañas del widget: más chicas que las del panel */
+  .wbar { flex: none; display: flex; justify-content: space-between; align-items: center; gap: 6px; margin: -3px -6px -2px; }
+  .wtabs { flex: none; gap: 2px; }
+  /* .wbar delante para ganarle a .seg.small del panel */
+  .wbar .wtabs button { font-size: 11.5px; padding: 2px 7px; border-radius: 6px; }
+  .wbar .wranges button { padding: 2px 5px; }
+  .wranges[hidden] { display: none; }
+  /* Widget muy angosto: botones más apretados para que todo quepa en una fila */
+  @media (max-width: 330px) {
+    .wbar .wtabs button { font-size: 11px; padding: 2px 5px; }
+    .wbar .wranges button { padding: 2px 4px; }
+  }
+  .wpane { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+  .wpane[hidden] { display: none; }
+  .wlist { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 6px; scrollbar-width: thin; scrollbar-color: #5c5f66 transparent; }
+  .wp .row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 12.5px; margin-bottom: 4px; }
+  .wp .n { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .wp .m { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .wp .track { height: 4px; }
+  .wbig { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; }
+  .wbig .k { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wbig .v { font-size: 30px; font-weight: 600; line-height: 1.15; font-variant-numeric: tabular-nums; }
+  .wgridbox { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+  .wgridbox .grid { flex: none; }
+  /* Esquina para cambiar el tamaño (la ventana no tiene marco) */
+  .grip { position: absolute; right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize; color: var(--faint); opacity: 0; transition: opacity .15s; }
+  .wbox:hover .grip { opacity: .8; }
+</style>
+</head>
+<body>
+<main>
+  <h1>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><g fill="var(--clay)">
+      <path d="M12 2.2c.5 0 .8.4.8.8l.4 6.3 3.6-5.2c.3-.4.8-.5 1.2-.2s.5.8.2 1.2l-3.4 5.3 5.9-2.2c.5-.2 1 .1 1.1.5.2.5-.1 1-.5 1.1l-6 1.9 6.1 1.3c.5.1.8.6.7 1s-.6.8-1 .7l-6.2-1 4.6 4.3c.4.3.4.9 0 1.2-.3.4-.9.4-1.2 0l-4.7-4.2 1.4 6.1c.1.5-.2.9-.6 1-.5.1-.9-.2-1-.6L12 16.4l-1.1 6.1c-.1.5-.5.8-1 .7s-.8-.5-.7-1l1.3-6.1-4.6 4.3c-.4.3-.9.3-1.2 0-.3-.4-.3-.9 0-1.2l4.5-4.4-6.2 1.1c-.5.1-.9-.2-1-.7s.2-.9.7-1l6.1-1.4-6-1.8c-.5-.2-.7-.7-.6-1.1.2-.5.7-.7 1.1-.6l5.9 2.1-3.5-5.2c-.3-.4-.2-.9.2-1.2s.9-.2 1.2.2l3.6 5.1.4-6.3c0-.4.4-.8.9-.8z"/>
+    </g></svg>
+    <span id="hello" data-i18n="hello">¿Qué sigue?</span>
+  </h1>
+
+  <section class="card">
+    <div class="bar">
+      <div class="seg" id="tabs">
+        <button data-tab="resumen" class="on" data-i18n="tabResumen">Resumen</button>
+        <button data-tab="modelos" data-i18n="tabModelos">Modelos</button>
+        <button data-tab="proyectos" data-i18n="tabProyectos">Proyectos</button>
+      </div>
+      <div class="right">
+        <select class="pick" id="project" aria-label="Filtrar por proyecto" data-i18n-aria="filterProject">
+          <option value="">Todos los proyectos</option>
+        </select>
+        <div class="seg" id="ranges">
+          <button data-range="all" class="on" data-i18n="rAll">Todo</button>
+          <button data-range="30">30d</button>
+          <button data-range="7">7d</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="resumen">
+      <div class="stats">
+        <div class="stat"><div class="k" data-i18n="sessions">Sesiones</div><div class="v" id="s-sessions">—</div></div>
+        <div class="stat"><div class="k" data-i18n="messages">Mensajes</div><div class="v" id="s-messages">—</div></div>
+        <div class="stat"><div class="k" data-i18n="totalTokens">Tokens totales</div><div class="v" id="s-tokens">—</div></div>
+        <div class="stat"><div class="k" data-i18n="activeDays">Días activos</div><div class="v" id="s-days">—</div></div>
+        <div class="stat"><div class="k" data-i18n="peakHour">Hora pico</div><div class="v" id="s-peak">—</div></div>
+        <div class="stat"><div class="k" data-i18n="favModel">Modelo favorito</div><div class="v" id="s-model">—</div></div>
+      </div>
+      <div class="grid" id="grid"></div>
+      <div id="daydetail"></div>
+    </div>
+
+    <div id="modelos" hidden>
+      <div class="models" id="models"></div>
+    </div>
+
+    <div id="proyectos" hidden>
+      <div class="stats stats4">
+        <div class="stat"><div class="k" data-i18n="activeTime">Tiempo activo</div><div class="v" id="p-time">—</div></div>
+        <div class="stat"><div class="k" data-i18n="curStreak">Racha actual</div><div class="v" id="p-streak">—</div></div>
+        <div class="stat"><div class="k" data-i18n="bestStreak">Mejor racha</div><div class="v" id="p-best">—</div></div>
+        <div class="stat"><div class="k" data-i18n="peakDayHour">Día y hora pico</div><div class="v" id="p-peak">—</div></div>
+      </div>
+      <div class="subbar">
+        <span id="p-count"></span>
+        <div class="seg small" id="sorts">
+          <button data-sort="minutes" class="on" data-i18n="sortTime">Tiempo</button>
+          <button data-sort="tokens">Tokens</button>
+          <button data-sort="sessions" data-i18n="sortSessions">Sesiones</button>
+        </div>
+      </div>
+      <div class="models" id="projects"></div>
+    </div>
+
+    <div class="foot">
+      <span id="foot">&nbsp;</span>
+      <span class="metric" id="metric"><span data-i18n="color">Color:</span> <button data-metric="tokens" data-i18n="mTokens">tokens</button> · <button data-metric="minutes" data-i18n="mTime">tiempo</button></span>
+    </div>
+  </section>
+  <div class="langs" id="langs"><button data-lang="es">Español</button> · <button data-lang="en">English</button></div>
+</main>
+<!-- Modo widget: solo se ve con /?widget=1 -->
+<div class="wbox" id="widget">
+  <div class="wbar">
+    <div class="seg small wtabs" id="wtabs">
+      <button data-wtab="hoy" class="on" data-i18n="tabResumen">Resumen</button>
+      <button data-wtab="proyectos" data-i18n="tabProyectos">Proyectos</button>
+      <button data-wtab="total" data-i18n="wTabTotal">Total</button>
+    </div>
+    <div class="seg small wtabs wranges" id="wranges">
+      <button data-wrange="1" class="on" data-i18n="wToday">Hoy</button>
+      <button data-wrange="30">30d</button>
+      <button data-wrange="all" data-i18n="rAll">Todo</button>
+    </div>
+  </div>
+  <div class="wpane" id="w-hoy">
+    <div class="wstats">
+      <div><div class="k" id="w-tokens-k">Tokens hoy</div><div class="v" id="w-tokens">—</div></div>
+      <div><div class="k" data-i18n="streak">Racha</div><div class="v" id="w-streak">—</div></div>
+      <div><div class="k" id="w-time-k">Activo hoy</div><div class="v" id="w-time">—</div></div>
+    </div>
+    <div class="wgridbox" id="wgridbox"><div class="grid" id="wgrid"></div></div>
+  </div>
+  <div class="wpane" id="w-proyectos" hidden><div class="wlist" id="wprojects"></div></div>
+  <div class="wpane" id="w-total" hidden>
+    <div class="wbig">
+      <div class="k" id="wt-label">Tokens totales</div>
+      <div class="v" id="wt-tokens">—</div>
+      <div class="k" id="wt-full">&nbsp;</div>
+      <div class="k" id="wt-extra">&nbsp;</div>
+    </div>
+    <div class="wstats">
+      <div><div class="k" data-i18n="sessions">Sesiones</div><div class="v" id="wt-sessions">—</div></div>
+      <div><div class="k" data-i18n="messages">Mensajes</div><div class="v" id="wt-messages">—</div></div>
+      <div><div class="k" data-i18n="activeTime">Tiempo activo</div><div class="v" id="wt-time">—</div></div>
+    </div>
+  </div>
+  <svg class="grip" id="grip" viewBox="0 0 16 16" aria-hidden="true"><path d="M13 6 6 13M13 10l-3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+const LOTR_TOKENS = 770000; // ~576 mil palabras de El Señor de los Anillos
+const $ = (id) => document.getElementById(id);
+
+// ---- Idioma (español / inglés) ---------------------------------------------
+// En inglés se usan los nombres del panel original (Overview, Sessions, Total tokens…).
+// {x} se reemplaza con t(clave, { x }); los plurales son [uno, varios].
+const T = {
+  es: {
+    hello: '¿Qué sigue?', helloName: '¿Qué sigue, {name}?',
+    tabResumen: 'Resumen', tabModelos: 'Modelos', tabProyectos: 'Proyectos', wTabTotal: 'Total',
+    allProjects: 'Todos los proyectos', filterProject: 'Filtrar por proyecto', rAll: 'Todo', wToday: 'Hoy',
+    sessions: 'Sesiones', messages: 'Mensajes', totalTokens: 'Tokens totales', activeDays: 'Días activos', peakHour: 'Hora pico', favModel: 'Modelo favorito',
+    activeTime: 'Tiempo activo', curStreak: 'Racha actual', bestStreak: 'Mejor racha', peakDayHour: 'Día y hora pico', streak: 'Racha',
+    sortTime: 'Tiempo', sortSessions: 'Sesiones', color: 'Color:', mTokens: 'tokens', mTime: 'tiempo',
+    noActivityDay: 'Sin actividad este día.', oldDay: 'Este día viene de un historial antiguo, sin detalle por proyecto.',
+    noModels: 'Sin datos de modelos en este rango.', responses: 'respuestas', noProjects: 'Sin datos de proyectos en este rango.',
+    mini: '{days} en 12 semanas<br>promedio {dur} por día activo', miniNone: 'Sin actividad en las últimas 12 semanas',
+    day: ['día', 'días'], message: ['mensaje', 'mensajes'], project: ['proyecto', 'proyectos'], session: ['sesión', 'sesiones'], activeDay: ['día activo', 'días activos'],
+    wTok: { 1: 'Tokens hoy', 30: 'Tokens 30 días', all: 'Tokens totales' },
+    wAct: { 1: 'Activo hoy', 30: 'Activo 30 días', all: 'Activo total' },
+    wEmpty: { 1: 'Todavía no hay proyectos hoy.', 30: 'Sin proyectos en los últimos 30 días.', all: 'Sin datos de proyectos.' },
+    totalSince: 'Tokens totales · desde el {date}', record: '{days} · récord {tok} {when}', today: 'hoy', onDate: 'el {date}',
+    lotrX: '~{x}× The Lord of the Rings', lotrMore: '~{p}% más que The Lord of the Rings', lotrPart: '{p}% de The Lord of the Rings',
+    footNone: 'Todavía no hay tokens en este rango.', footX: 'Usaste ~{x}× más tokens que The Lord of the Rings.',
+    footMore: 'Usaste ~{p}% más tokens que The Lord of the Rings.', footPart: 'Usaste el {p}% de los tokens de The Lord of the Rings.',
+    noLogs: 'No encontré registros de Claude Code en', loadError: 'No pude cargar los datos: ', active: 'activo',
+    months: ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept', 'oct', 'nov', 'dic'],
+    days: ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'],
+    daysShort: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
+  },
+  en: {
+    hello: "What's next?", helloName: "What's next, {name}?",
+    tabResumen: 'Overview', tabModelos: 'Models', tabProyectos: 'Projects', wTabTotal: 'Total',
+    allProjects: 'All projects', filterProject: 'Filter by project', rAll: 'All', wToday: 'Today',
+    sessions: 'Sessions', messages: 'Messages', totalTokens: 'Total tokens', activeDays: 'Active days', peakHour: 'Peak hour', favModel: 'Favorite model',
+    activeTime: 'Active time', curStreak: 'Current streak', bestStreak: 'Best streak', peakDayHour: 'Peak day & hour', streak: 'Streak',
+    sortTime: 'Time', sortSessions: 'Sessions', color: 'Color:', mTokens: 'tokens', mTime: 'time',
+    noActivityDay: 'No activity this day.', oldDay: 'This day comes from an older history, without per-project detail.',
+    noModels: 'No model data in this range.', responses: 'responses', noProjects: 'No project data in this range.',
+    mini: '{days} in 12 weeks<br>average {dur} per active day', miniNone: 'No activity in the last 12 weeks',
+    day: ['day', 'days'], message: ['message', 'messages'], project: ['project', 'projects'], session: ['session', 'sessions'], activeDay: ['active day', 'active days'],
+    wTok: { 1: 'Tokens today', 30: 'Tokens 30 days', all: 'Total tokens' },
+    wAct: { 1: 'Active today', 30: 'Active 30 days', all: 'Active total' },
+    wEmpty: { 1: 'No projects yet today.', 30: 'No projects in the last 30 days.', all: 'No project data.' },
+    totalSince: 'Total tokens · since {date}', record: '{days} · record {tok} {when}', today: 'today', onDate: 'on {date}',
+    lotrX: '~{x}× The Lord of the Rings', lotrMore: '~{p}% more than The Lord of the Rings', lotrPart: '{p}% of The Lord of the Rings',
+    footNone: 'No tokens in this range yet.', footX: "You've used ~{x}× more tokens than The Lord of the Rings.",
+    footMore: "You've used ~{p}% more tokens than The Lord of the Rings.", footPart: "You've used {p}% of the tokens in The Lord of the Rings.",
+    noLogs: 'No Claude Code logs found in', loadError: "Couldn't load the data: ", active: 'active',
+    months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+    daysShort: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+  },
+};
+// ?lang=es|en > lo elegido antes > idioma del sistema (es-* → español; si no, inglés).
+let LANG = (navigator.language || '').toLowerCase().startsWith('es') ? 'es' : 'en';
+try { const l = localStorage.getItem('lang'); if (T[l]) LANG = l; } catch {}
+{ const l = new URLSearchParams(location.search).get('lang'); if (T[l]) LANG = l; }
+function t(key, vars) {
+  let s = T[LANG][key] ?? T.es[key];
+  if (typeof s === 'string' && vars) s = s.replace(/\{(\w+)\}/g, (_, k) => (k in vars ? vars[k] : ''));
+  return s;
+}
+// Pone los textos fijos del HTML (data-i18n y data-i18n-aria) en el idioma actual.
+function applyLang() {
+  document.documentElement.lang = LANG;
+  document.querySelectorAll('[data-i18n]').forEach((el) => (el.textContent = t(el.dataset.i18n)));
+  document.querySelectorAll('[data-i18n-aria]').forEach((el) => el.setAttribute('aria-label', t(el.dataset.i18nAria)));
+  document.querySelectorAll('#langs button').forEach((b) => b.classList.toggle('on', b.dataset.lang === LANG));
+}
+applyLang();
+const state = { tab: 'resumen', range: 'all', data: null, animate: true, sort: 'minutes', open: new Set(), justOpened: null, metric: 'tokens', selected: null };
+// Métrica del color del heatmap: se recuerda entre aperturas (si el navegador deja).
+try { if (localStorage.getItem('metric') === 'minutes') state.metric = 'minutes'; } catch {}
+// Proyecto elegido en el filtro ('' = todos). También se recuerda.
+state.project = '';
+try { state.project = localStorage.getItem('project') || ''; } catch {}
+// Modo widget (/?widget=1): siempre todos los proyectos y color por tokens.
+const WIDGET = new URLSearchParams(location.search).get('widget') === '1';
+if (WIDGET) { document.documentElement.classList.add('widget'); state.project = ''; state.metric = 'tokens'; }
+// Pestaña del widget (hoy / proyectos / total). Se recuerda.
+state.wtab = 'hoy';
+try { const t = localStorage.getItem('wtab'); if (['hoy', 'proyectos', 'total'].includes(t)) state.wtab = t; } catch {}
+// Restos de la vista de uso del plan (quitada): ya no se usan.
+try { localStorage.removeItem('usoCalib'); } catch {}
+// Período del widget: usa el mismo state.range que el panel ('1' = solo hoy). Se recuerda.
+if (WIDGET) {
+  state.range = '1';
+  try { const r = localStorage.getItem('wrange'); if (['1', '30', 'all'].includes(r)) state.range = r; } catch {}
+}
+
+const pad = (n) => String(n).padStart(2, '0');
+const keyOf = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const fmtInt = (n) => Math.round(n).toLocaleString('en-US');
+function fmtTok(n) {
+  if (n >= 1e9) return (n / 1e9).toFixed(n >= 1e10 ? 0 : 1).replace(/\.0$/, '') + 'B';
+  if (n >= 1e6) return (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(/\.0$/, '') + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(n >= 1e4 ? 0 : 1).replace(/\.0$/, '') + 'K';
+  return String(Math.round(n));
+}
+// Minutos a "34 h 33 m" (o "45 m" si es menos de una hora)
+function fmtDur(min) {
+  const m = Math.round(min), h = Math.floor(m / 60);
+  return h ? `${h} h ${m % 60} m` : `${m} m`;
+}
+const plural = (n, uno, varios) => `${fmtInt(n)} ${n === 1 ? uno : varios}`;
+const pl = (n, key) => plural(n, ...t(key)); // pl(3, 'day') → "3 días" / "3 days"
+const esc = (t) => String(t).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+function fmtHour(h) { return `${h % 12 || 12} ${LANG === 'en' ? (h < 12 ? 'AM' : 'PM') : (h < 12 ? 'a.m.' : 'p.m.')}`; }
+function prettyModel(id) {
+  let m = id.match(/claude-(opus|sonnet|haiku|fable|mythos)-(\d+)(?:-(\d{1,2}))?(?:-|$)/i);
+  if (m) return m[1][0].toUpperCase() + m[1].slice(1) + ' ' + m[2] + (m[3] ? '.' + m[3] : '');
+  m = id.match(/claude-(\d)(?:-(\d))?-(opus|sonnet|haiku)/i);
+  if (m) return m[3][0].toUpperCase() + m[3].slice(1) + ' ' + m[1] + (m[2] ? '.' + m[2] : '');
+  return id;
+}
+const dateOf = (k) => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
+// "viernes 23 oct 2026" / "Friday Oct 23 2026"
+function fmtDate(d) {
+  const L = T[LANG];
+  return LANG === 'en' ? `${L.days[d.getDay()]} ${L.months[d.getMonth()]} ${d.getDate()} ${d.getFullYear()}`
+    : `${L.days[d.getDay()]} ${d.getDate()} ${L.months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+// Días que ven todas las pestañas: todos, o solo los números del proyecto elegido.
+// Días antiguos sin `projects` no aparecen al filtrar; sin hours/models cuentan como vacíos.
+let viewCache = { data: null, project: null, days: null };
+function viewDays() {
+  const data = state.data;
+  if (!state.project) return data.days;
+  if (viewCache.data === data && viewCache.project === state.project) return viewCache.days;
+  const out = {};
+  for (const [k, d] of Object.entries(data.days)) {
+    const p = d.projects && d.projects[state.project];
+    if (!p) continue;
+    out[k] = {
+      tokens: p.tokens || 0, messages: p.messages || 0, minutes: p.minutes || 0,
+      sessions: p.sessions || [], hours: p.hours || new Array(24).fill(0), models: p.models || {},
+      projects: { [state.project]: p },
+    };
+  }
+  viewCache = { data, project: state.project, days: out };
+  return out;
+}
+
+// Opciones del filtro, ordenadas por tiempo activo total. Solo se rehace si cambian
+// los nombres, para no cerrar el menú si está abierto durante la recarga.
+function fillProjects() {
+  const total = {};
+  for (const d of Object.values(state.data.days)) {
+    for (const [n, p] of Object.entries(d.projects || {})) total[n] = (total[n] || 0) + (p.minutes || 0);
+  }
+  const names = Object.keys(total).sort((a, b) => total[b] - total[a] || a.localeCompare(b));
+  if (state.project && !names.includes(state.project)) state.project = '';
+  const sel = $('project');
+  const sig = LANG + '\n' + names.join('\n'); // con el idioma: «Todos los proyectos» cambia
+  if (sel.dataset.sig !== sig) {
+    sel.innerHTML = `<option value="">${esc(t('allProjects'))}</option>` + names.map((n) => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+    sel.dataset.sig = sig;
+  }
+  sel.value = state.project;
+  sel.classList.toggle('on', !!state.project);
+}
+
+function today0() { const t = new Date(); t.setHours(0, 0, 0, 0); return t; }
+function inRange(key) {
+  if (state.range === 'all') return true;
+  const start = today0(); start.setDate(start.getDate() - (Number(state.range) - 1));
+  return key >= keyOf(start);
+}
+
+function summarize() {
+  const days = viewDays();
+  const sessions = new Set(); const hours = new Array(24).fill(0); const models = {};
+  let tokens = 0, messages = 0, active = 0;
+  for (const [k, d] of Object.entries(days)) {
+    if (!inRange(k)) continue;
+    if (d.messages > 0) active++;
+    tokens += d.tokens; messages += d.messages;
+    d.sessions.forEach((s) => sessions.add(s));
+    d.hours.forEach((v, i) => (hours[i] += v));
+    for (const [m, v] of Object.entries(d.models || {})) {
+      const name = prettyModel(m);
+      const t = models[name] || (models[name] = { tokens: 0, messages: 0 });
+      t.tokens += v.tokens; t.messages += v.messages;
+    }
+  }
+  const peak = messages ? hours.indexOf(Math.max(...hours)) : null;
+  const ranked = Object.entries(models).sort((a, b) => b[1].tokens - a[1].tokens);
+  return { tokens, messages, active, sessions: sessions.size, peak, models: ranked };
+}
+
+function levels(values) {
+  const nz = values.filter((v) => v > 0).sort((a, b) => a - b);
+  if (!nz.length) return () => 0;
+  const q = (p) => nz[Math.min(nz.length - 1, Math.floor(p * nz.length))];
+  const t1 = q(0.25), t2 = q(0.5), t3 = q(0.8);
+  return (v) => (v <= 0 ? 0 : v <= t1 ? 1 : v <= t2 ? 2 : v <= t3 ? 3 : 4);
+}
+
+function weeksToShow() {
+  // Como en el original: cuadritos de ~17 px con 6 px de separación (26 semanas a 620 px).
+  const w = $('grid').clientWidth || 590;
+  return Math.max(12, Math.min(53, Math.floor((w + 6) / 23)));
+}
+
+// Fechas [Date, clave] de las últimas `weeks` semanas, de lunes a domingo, por columnas.
+function gridKeys(weeks) {
+  const today = today0();
+  const offset = (today.getDay() + 6) % 7; // lunes = 0
+  const start = new Date(today); start.setDate(start.getDate() - offset - (weeks - 1) * 7);
+  const keys = [];
+  for (let i = 0; i < weeks * 7; i++) { const d = new Date(start); d.setDate(start.getDate() + i); keys.push([d, keyOf(d)]); }
+  return keys;
+}
+
+function renderGrid(grid = $('grid'), weeks = weeksToShow()) {
+  grid.style.gridTemplateColumns = `repeat(${weeks}, minmax(0, 1fr))`;
+  const today = today0();
+  const days = viewDays();
+  const keys = gridKeys(weeks);
+  const metricOf = (k) => (days[k] ? (state.metric === 'minutes' ? days[k].minutes || 0 : days[k].tokens) : 0);
+  const lvl = levels(keys.map(([, k]) => metricOf(k)));
+  const todayKey = keyOf(today);
+  // Mismas fechas y sin animación de entrada: se reutilizan los cuadritos, así los
+  // cambios de rango, color o proyecto se ven como una transición suave.
+  const reuse = !state.animate && grid.children.length === keys.length && grid.dataset.first === keys[0][1];
+  grid.dataset.first = keys[0][1];
+  const frag = document.createDocumentFragment();
+  keys.forEach(([d, k], i) => {
+    const c = reuse ? grid.children[i] : document.createElement('div');
+    const info = days[k];
+    const tok = info ? info.tokens : 0;
+    c.className = 'cell';
+    if (d > today) c.classList.add('future');
+    else {
+      const l = lvl(metricOf(k)); if (l) c.classList.add('l' + l);
+      // En el widget con "Hoy" no se atenúa todo el resto: hoy ya va marcado.
+      if (!inRange(k) && !(WIDGET && state.range === '1')) c.classList.add('out');
+      if (k === todayKey) c.classList.add('today');
+      if (k === state.selected) c.classList.add('sel');
+    }
+    c.dataset.k = k; c.dataset.t = tok; c.dataset.m = info ? info.messages : 0;
+    if (reuse) return;
+    c.style.animationDelay = state.animate ? `${Math.floor(i / 7) * 14 + (i % 7) * 6}ms` : '0ms';
+    if (!state.animate) c.style.animationDuration = '0s';
+    frag.appendChild(c);
+  });
+  if (!reuse) grid.replaceChildren(frag);
+}
+
+// Proyectos de un día ordenados por tiempo (y tokens si empatan).
+function dayProjects(d) {
+  return Object.entries((d && d.projects) || {}).sort((a, b) => (b[1].minutes || 0) - (a[1].minutes || 0) || b[1].tokens - a[1].tokens);
+}
+
+function renderDayDetail() {
+  const box = $('daydetail');
+  const k = state.selected;
+  if (!k) { box.replaceChildren(); return; }
+  const d = viewDays()[k];
+  let html = `<div class="head"><b>${fmtDate(dateOf(k))}</b>`;
+  if (!d || !d.messages) {
+    html += `</div><div class="note">${t('noActivityDay')}</div>`;
+  } else {
+    html += `<span>${fmtDur(d.minutes || 0)} · ${fmtTok(d.tokens)} tokens · ${pl(d.messages, 'message')}</span></div>`;
+    const ps = dayProjects(d);
+    if (!ps.length) html += `<div class="note">${t('oldDay')}</div>`;
+    const max = Math.max(1, ...ps.map(([, p]) => p.minutes || 0));
+    html += '<div class="dps">' + ps.map(([n, p]) => `<div class="dp"><span class="n">${esc(n)}</span>
+      <div class="track"><i data-w="${(((p.minutes || 0) / max) * 100).toFixed(1)}"></i></div>
+      <span class="m">${fmtDur(p.minutes || 0)} · ${fmtTok(p.tokens)} tokens</span></div>`).join('') + '</div>';
+  }
+  // Solo se anima al abrir otro día, no en cada recarga de datos.
+  const fresh = box.dataset.k !== k;
+  box.innerHTML = `<div class="daydetail"${fresh ? '' : ' style="animation:none"'}>${html}</div>`;
+  box.dataset.k = k;
+  const bars = box.querySelectorAll('.track i');
+  if (fresh) requestAnimationFrame(() => bars.forEach((i) => (i.style.width = i.dataset.w + '%')));
+  else bars.forEach((i) => { i.style.transition = 'none'; i.style.width = i.dataset.w + '%'; });
+}
+
+function selectDay(k) {
+  state.selected = k;
+  if (!k) delete $('daydetail').dataset.k;
+  document.querySelectorAll('#grid .cell.sel').forEach((c) => c.classList.remove('sel'));
+  if (k) { const c = document.querySelector(`#grid .cell[data-k="${k}"]`); if (c) c.classList.add('sel'); }
+  renderDayDetail();
+}
+
+function renderModels(sum) {
+  const box = $('models');
+  if (!sum.models.length) { box.innerHTML = `<div class="empty-msg">${t('noModels')}</div>`; return; }
+  const total = sum.models.reduce((a, [, v]) => a + v.tokens, 0) || 1;
+  box.innerHTML = sum.models.map(([name, v]) => {
+    const pct = (v.tokens / total) * 100;
+    return `<div class="model"><div class="row"><span class="name">${name}</span>
+      <span class="meta">${fmtTok(v.tokens)} tokens · ${fmtInt(v.messages)} ${t('responses')} · ${pct < 1 ? '<1' : Math.round(pct)}%</span></div>
+      <div class="track"><i data-w="${pct.toFixed(1)}"></i></div></div>`;
+  }).join('');
+  requestAnimationFrame(() => box.querySelectorAll('.track i').forEach((i) => (i.style.width = i.dataset.w + '%')));
+}
+
+// ---- Pestaña Proyectos ----------------------------------------------------
+// Totales del rango. Los días antiguos sin `projects` suman su tiempo al total
+// (si lo traen) pero no aparecen en la lista.
+function summarizeProjects() {
+  const projects = {}; const dow = new Array(7).fill(0);
+  let total = 0;
+  for (const [k, d] of Object.entries(viewDays())) {
+    if (!inRange(k)) continue;
+    const ps = d.projects || {};
+    const names = Object.keys(ps);
+    const dayMin = names.length ? names.reduce((a, n) => a + (ps[n].minutes || 0), 0) : (d.minutes || 0);
+    total += dayMin;
+    dow[dateOf(k).getDay()] += dayMin;
+    for (const n of names) {
+      const p = ps[n];
+      const q = projects[n] || (projects[n] = { name: n, minutes: 0, tokens: 0, sessionSet: new Set() });
+      q.minutes += p.minutes || 0; q.tokens += p.tokens || 0;
+      (p.sessions || []).forEach((x) => q.sessionSet.add(x));
+    }
+  }
+  const list = Object.values(projects).map((p) => ({ ...p, sessions: p.sessionSet.size }));
+  const peakDay = total > 0 ? dow.indexOf(Math.max(...dow)) : null;
+  return { list, total, peakDay };
+}
+
+// Racha actual (termina hoy o ayer) y mejor racha, contando solo días del rango.
+function streaks() {
+  const days = viewDays();
+  const on = (k) => inRange(k) && days[k] && days[k].messages > 0;
+  const d = today0();
+  if (!on(keyOf(d))) d.setDate(d.getDate() - 1);
+  let current = 0;
+  while (on(keyOf(d))) { current++; d.setDate(d.getDate() - 1); }
+  let best = 0, run = 0, prev = null;
+  for (const k of Object.keys(days).filter(on).sort()) {
+    const t = dateOf(k);
+    run = prev && Math.round((t - prev) / 864e5) === 1 ? run + 1 : 1;
+    best = Math.max(best, run); prev = t;
+  }
+  return { current, best };
+}
+
+const CHEV = '<svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5 8 6l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+// Mini heatmap de un proyecto: últimas 12 semanas, color según tiempo activo.
+function miniGrid(name, animate) {
+  const days = viewDays();
+  const today = today0(), todayKey = keyOf(today);
+  const keys = gridKeys(12);
+  const val = (k) => (days[k] && days[k].projects && days[k].projects[name]) || { minutes: 0, tokens: 0 };
+  const lvl = levels(keys.map(([, k]) => val(k).minutes || 0));
+  let active = 0, mins = 0;
+  const cells = keys.map(([d, k], i) => {
+    if (d > today) return '<div class="cell future"></div>';
+    const p = val(k); const l = lvl(p.minutes || 0);
+    if (p.minutes > 0 || p.tokens > 0) { active++; mins += p.minutes || 0; }
+    const cls = ['cell', l ? 'l' + l : '', inRange(k) ? '' : 'out', k === todayKey ? 'today' : ''].join(' ');
+    const anim = animate ? `animation-delay:${Math.floor(i / 7) * 14 + (i % 7) * 6}ms` : 'animation-duration:0s';
+    return `<div class="${cls}" style="${anim}" data-k="${k}" data-min="${p.minutes || 0}" data-t="${p.tokens || 0}"></div>`;
+  }).join('');
+  const resumen = active
+    ? t('mini', { days: pl(active, 'activeDay'), dur: fmtDur(mins / active) })
+    : t('miniNone');
+  return `<div class="detail"><div class="mini">${cells}</div><div class="meta">${resumen}</div></div>`;
+}
+
+function renderProjects(sum) {
+  const ps = summarizeProjects();
+  const st = streaks();
+  setVal('p-time', fmtDur(ps.total));
+  setVal('p-streak', pl(st.current, 'day'));
+  setVal('p-best', pl(st.best, 'day'));
+  setVal('p-peak', ps.peakDay == null ? '—' : `${t('daysShort')[ps.peakDay]} · ${sum.peak == null ? '—' : fmtHour(sum.peak)}`);
+  $('p-count').textContent = ps.list.length ? pl(ps.list.length, 'project') : '';
+
+  const box = $('projects');
+  if (!ps.list.length) { box.innerHTML = `<div class="empty-msg">${t('noProjects')}</div>`; return; }
+  const key = state.sort;
+  const list = ps.list.sort((a, b) => b[key] - a[key] || b.minutes - a.minutes);
+  // La barra y el % son siempre del tiempo total; el selector solo cambia el orden.
+  const total = ps.total || 1;
+  box.innerHTML = list.map((p) => {
+    const pct = (p.minutes / total) * 100;
+    const open = state.open.has(p.name);
+    return `<div class="model proj${open ? ' open' : ''}" data-name="${esc(p.name)}" role="button" tabindex="0" aria-expanded="${open}">
+      <div class="row"><span class="name">${CHEV}<span>${esc(p.name)}</span></span>
+      <span class="meta">${fmtDur(p.minutes)} · ${pct < 1 ? '<1' : Math.round(pct)}% · ${fmtTok(p.tokens)} tokens · ${pl(p.sessions, 'session')}</span></div>
+      <div class="track"><i data-w="${pct.toFixed(1)}"></i></div>
+      ${open ? miniGrid(p.name, state.justOpened === p.name) : ''}</div>`;
+  }).join('');
+  state.justOpened = null;
+  requestAnimationFrame(() => box.querySelectorAll('.track i').forEach((i) => (i.style.width = i.dataset.w + '%')));
+}
+
+// Cambia el valor de una tarjeta y lo anima si cambió (no en la primera carga).
+function setVal(id, text) {
+  const el = $(id);
+  if (el.textContent === text) return;
+  const first = el.textContent === '—';
+  el.textContent = text;
+  if (first) return;
+  el.classList.remove('tick'); void el.offsetWidth; el.classList.add('tick');
+}
+
+// Vuelve a disparar la entrada suave de una pestaña.
+function paneIn(el) { el.classList.remove('pane-in'); void el.offsetWidth; el.classList.add('pane-in'); }
+
+// ---- Modo widget ----------------------------------------------------------
+// El alto de la ventana decide el tamaño de los cuadritos y el ancho, cuántas
+// semanas caben (~16 con el tamaño inicial). Devuelve la cantidad de semanas.
+function widgetWeeks() {
+  const box = $('wgridbox'), grid = $('wgrid');
+  const W = box.clientWidth - 4, H = box.clientHeight - 4; // 2 px de borde por lado en .grid
+  const gap = Math.max(2, Math.round(Math.max(6, H / 8.5) / 4));
+  let cell = Math.max(4, (H - 6 * gap) / 7);
+  const weeks = Math.max(4, Math.min(53, Math.floor((W + gap) / (cell + gap))));
+  cell = Math.max(4, Math.min(cell, (W - (weeks - 1) * gap) / weeks));
+  grid.style.gap = gap + 'px';
+  grid.style.width = (weeks * cell + (weeks - 1) * gap + 4) + 'px';
+  return weeks;
+}
+
+// Calcula algo con todo el historial, sin importar el período elegido.
+function enTodo(fn) {
+  const r = state.range; state.range = 'all';
+  try { return fn(); } finally { state.range = r; }
+}
+
+function renderWidget() {
+  document.querySelectorAll('#wtabs button').forEach((b) => b.classList.toggle('on', b.dataset.wtab === state.wtab));
+  document.querySelectorAll('#wranges button').forEach((b) => b.classList.toggle('on', b.dataset.wrange === state.range));
+  for (const t of ['hoy', 'proyectos', 'total']) $('w-' + t).hidden = state.wtab !== t;
+  // Total siempre es todo el historial: ahí el período no aplica.
+  $('wranges').hidden = state.wtab === 'total';
+  if (state.wtab === 'proyectos') return renderWidgetProjects();
+  if (state.wtab === 'total') return renderWidgetTotal();
+  // Nombre de las tarjetas según el período: "Tokens hoy", "Activo 30 días", "Tokens totales"…
+  $('w-tokens-k').textContent = t('wTok')[state.range];
+  $('w-time-k').textContent = t('wAct')[state.range];
+  setVal('w-tokens', fmtTok(summarize().tokens));
+  setVal('w-streak', pl(enTodo(streaks).current, 'day'));
+  setVal('w-time', fmtDur(summarizeProjects().total));
+  if (Object.keys(state.data.days).length) renderGrid($('wgrid'), widgetWeeks());
+}
+
+// Proyectos del período, por tiempo activo. La barra es el % del tiempo total del
+// período, igual que en la pestaña Proyectos del panel.
+function renderWidgetProjects() {
+  const ps = summarizeProjects();
+  const box = $('wprojects');
+  const total = ps.total || 1;
+  const vacio = t('wEmpty')[state.range];
+  const html = !ps.list.length ? `<div class="empty-msg">${vacio}</div>`
+    : ps.list.sort((a, b) => b.minutes - a.minutes || b.tokens - a.tokens).map((p) => `<div class="wp">
+      <div class="row"><span class="n">${esc(p.name)}</span><span class="m">${fmtDur(p.minutes)} · ${fmtTok(p.tokens)} tokens</span></div>
+      <div class="track"><i data-w="${((p.minutes / total) * 100).toFixed(1)}"></i></div></div>`).join('');
+  // Solo se redibuja (y se animan las barras) si cambió algo, no en cada recarga.
+  if (box.dataset.html === html) return;
+  box.dataset.html = html;
+  box.innerHTML = html;
+  requestAnimationFrame(() => box.querySelectorAll('.track i').forEach((i) => (i.style.width = i.dataset.w + '%')));
+}
+
+
+// "1 sept" / "Sep 1", con el año si no es este.
+function fechaCorta(d) {
+  const m = T[LANG].months[d.getMonth()], y = d.getFullYear() !== new Date().getFullYear() ? ' ' + d.getFullYear() : '';
+  return LANG === 'en' ? `${m} ${d.getDate()}${y}` : `${d.getDate()} ${m}${y}`;
+}
+// La comparación del panel, en corto: "~6,042× The Lord of the Rings".
+function lotrCorto(tokens) {
+  if (!tokens) return '';
+  const r = tokens / LOTR_TOKENS;
+  return r >= 2 ? t('lotrX', { x: fmtInt(r) })
+    : r >= 1 ? t('lotrMore', { p: Math.round((r - 1) * 100) })
+    : t('lotrPart', { p: Math.max(1, Math.round(r * 100)) });
+}
+
+function renderWidgetTotal() {
+  const sum = enTodo(summarize);
+  const days = viewDays();
+  const activos = Object.keys(days).filter((k) => days[k].messages > 0).sort();
+  $('wt-label').textContent = activos.length ? t('totalSince', { date: fechaCorta(dateOf(activos[0])) }) : t('totalTokens');
+  setVal('wt-tokens', fmtTok(sum.tokens));
+  // Cifra completa · comparación; si no cabe a lo ancho, queda solo la comparación.
+  const full = $('wt-full'), lotr = lotrCorto(sum.tokens);
+  full.textContent = lotr ? `${fmtInt(sum.tokens)} tokens · ${lotr}` : `${fmtInt(sum.tokens)} tokens`;
+  if (lotr && full.scrollWidth > full.clientWidth) full.textContent = lotr;
+  // Días activos · día récord (por tokens).
+  const rec = activos.reduce((a, k) => (!a || days[k].tokens > days[a].tokens ? k : a), null);
+  $('wt-extra').textContent = rec
+    ? t('record', { days: pl(activos.length, 'activeDay'), tok: fmtTok(days[rec].tokens), when: rec === keyOf(today0()) ? t('today') : t('onDate', { date: fechaCorta(dateOf(rec)) }) })
+    : '';
+  setVal('wt-sessions', fmtInt(sum.sessions));
+  setVal('wt-messages', fmtInt(sum.messages));
+  setVal('wt-time', fmtDur(enTodo(summarizeProjects).total));
+}
+
+function render() {
+  if (!state.data) return;
+  if (WIDGET) { renderWidget(); state.animate = false; return; }
+  const sum = summarize();
+  setVal('s-sessions', fmtInt(sum.sessions));
+  setVal('s-messages', fmtInt(sum.messages));
+  setVal('s-tokens', fmtTok(sum.tokens));
+  setVal('s-days', fmtInt(sum.active));
+  setVal('s-peak', sum.peak == null ? '—' : fmtHour(sum.peak));
+  setVal('s-model', sum.models.length ? sum.models[0][0] : '—');
+  $('resumen').hidden = state.tab !== 'resumen';
+  $('modelos').hidden = state.tab !== 'modelos';
+  $('proyectos').hidden = state.tab !== 'proyectos';
+  $('metric').hidden = state.tab !== 'resumen';
+  document.querySelectorAll('#metric button').forEach((b) => b.classList.toggle('on', b.dataset.metric === state.metric));
+  const hasDays = Object.keys(state.data.days).length > 0;
+  if (state.tab === 'resumen') { if (hasDays) { renderGrid(); renderDayDetail(); } }
+  else if (state.tab === 'modelos') renderModels(sum);
+  else renderProjects(sum);
+  const r = sum.tokens / LOTR_TOKENS;
+  $('foot').textContent = !sum.tokens ? t('footNone')
+    : r >= 2 ? t('footX', { x: fmtInt(r) })
+    : r >= 1 ? t('footMore', { p: Math.round((r - 1) * 100) })
+    : t('footPart', { p: Math.max(1, Math.round(r * 100)) });
+  state.animate = false;
+}
+
+async function load(refresh) {
+  try {
+    const res = await fetch('/api/stats' + (refresh ? '?refresh=1' : ''), { cache: 'no-store' });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    state.data = data;
+    fillProjects();
+    $('hello').textContent = helloText();
+    if (!Object.keys(data.days).length) {
+      $('grid').outerHTML = `<div class="empty-msg" id="grid">${t('noLogs')}<br><code>${esc(data.source)}</code></div>`;
+    }
+    render();
+  } catch (err) {
+    $('foot').textContent = t('loadError') + err.message;
+  }
+}
+
+// Pestañas y rangos
+document.querySelectorAll('#tabs button').forEach((b) => b.onclick = () => {
+  document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('on', x === b));
+  if (state.tab === b.dataset.tab) return;
+  state.tab = b.dataset.tab; state.animate = state.tab === 'resumen'; render();
+  paneIn($(state.tab));
+});
+document.querySelectorAll('#ranges button').forEach((b) => b.onclick = () => {
+  document.querySelectorAll('#ranges button').forEach((x) => x.classList.toggle('on', x === b));
+  state.range = b.dataset.range; render();
+});
+
+// Clic en un cuadrito: muestra el detalle de ese día; clic de nuevo o Esc lo cierra.
+$('grid').addEventListener('click', (e) => {
+  const c = e.target.closest('.cell');
+  if (!c || c.classList.contains('future')) return;
+  selectDay(state.selected === c.dataset.k ? null : c.dataset.k);
+});
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && state.selected) selectDay(null); });
+
+// Métrica del color del heatmap
+document.querySelectorAll('#metric button').forEach((b) => b.onclick = () => {
+  state.metric = b.dataset.metric;
+  try { localStorage.setItem('metric', state.metric); } catch {}
+  render();
+});
+
+// Filtro por proyecto: recalcula todas las pestañas
+$('project').addEventListener('change', (e) => {
+  state.project = e.target.value;
+  e.target.classList.toggle('on', !!state.project);
+  try { localStorage.setItem('project', state.project); } catch {}
+  render();
+});
+
+// Orden de la lista de proyectos
+document.querySelectorAll('#sorts button').forEach((b) => b.onclick = () => {
+  document.querySelectorAll('#sorts button').forEach((x) => x.classList.toggle('on', x === b));
+  state.sort = b.dataset.sort; render();
+});
+
+// Clic (o Enter/Espacio) en un proyecto: abre o cierra su mini heatmap
+function toggleProject(row) {
+  const n = row.dataset.name;
+  if (state.open.has(n)) state.open.delete(n); else { state.open.add(n); state.justOpened = n; }
+  render();
+  const again = [...$('projects').querySelectorAll('.proj')].find((r) => r.dataset.name === n);
+  if (again) again.focus({ preventScroll: true });
+}
+$('projects').addEventListener('click', (e) => {
+  const row = e.target.closest('.proj');
+  if (row && !e.target.closest('.detail')) toggleProject(row);
+});
+$('projects').addEventListener('keydown', (e) => {
+  const row = e.target.closest('.proj');
+  if (row && e.target === row && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); toggleProject(row); }
+});
+
+// Tooltip (heatmap del Resumen y mini heatmaps de proyectos)
+const tip = $('tip');
+document.addEventListener('mousemove', (e) => {
+  const c = e.target.closest && e.target.closest('.cell');
+  if (!c || c.classList.contains('future') || state.dragging) { tip.classList.remove('show'); return; }
+  const date = fmtDate(dateOf(c.dataset.k));
+  const tok = Number(c.dataset.t);
+  if ('min' in c.dataset) {
+    tip.innerHTML = `<b>${fmtDur(Number(c.dataset.min))}</b> ${t('active')}<br><span>${date}${tok ? ' · ' + fmtTok(tok) + ' tokens' : ''}</span>`;
+  } else {
+    // Grande: la métrica del color. Abajo: fecha · la otra métrica · proyecto principal.
+    const d = viewDays()[c.dataset.k];
+    const min = d ? d.minutes || 0 : 0;
+    const top = dayProjects(d)[0];
+    const extra = [date];
+    if (state.metric === 'minutes') { if (d && d.messages) extra.push(fmtTok(tok) + ' tokens'); }
+    else if (min > 0) extra.push(fmtDur(min));
+    if (top) extra.push(esc(top[0]));
+    tip.innerHTML = (state.metric === 'minutes' ? `<b>${fmtDur(min)}</b> ${t('active')}` : `<b>${fmtInt(tok)}</b> tokens`) + `<br><span>${extra.join(' · ')}</span>`;
+  }
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = e.clientX + 14, yy = e.clientY - h - 12;
+  if (x + w > innerWidth - 8) x = e.clientX - w - 14;
+  if (yy < 8) yy = e.clientY + 18;
+  tip.style.left = x + 'px'; tip.style.top = yy + 'px';
+  tip.classList.add('show');
+});
+document.addEventListener('mouseleave', () => tip.classList.remove('show'));
+
+// Widget: arrastrar mueve la ventana, la esquina cambia su tamaño y un clic
+// (sin arrastrar) abre el panel completo. En Electron lo hace la ventana
+// (window.widgetApp, ver widget/preload.js); en un navegador, el clic abre el panel.
+if (WIDGET) {
+  const app = window.widgetApp;
+  const box = $('widget');
+  // Pestañas: solo cambian lo que se ve (no arrastran ni abren el panel).
+  function irA(tab) {
+    if (state.wtab === tab) return;
+    state.wtab = tab;
+    try { localStorage.setItem('wtab', state.wtab); } catch {}
+    state.animate = state.wtab === 'hoy';
+    delete $('wprojects').dataset.html; // para que las barras vuelvan a animarse
+    render();
+    paneIn($('w-' + state.wtab));
+  }
+  document.querySelectorAll('#wtabs button').forEach((b) => b.onclick = () => irA(b.dataset.wtab));
+  // Período (Hoy · 30d · Todo): mismo filtro que el panel, se recuerda.
+  document.querySelectorAll('#wranges button').forEach((b) => b.onclick = () => {
+    if (state.range === b.dataset.wrange) return;
+    state.range = b.dataset.wrange;
+    try { localStorage.setItem('wrange', state.range); } catch {}
+    render();
+  });
+  box.addEventListener('pointerdown', async (e) => {
+    if (e.button !== 0 || e.target.closest('#widget button')) return; // pestañas y período
+    // La barra de desplazamiento de la lista de proyectos tampoco arrastra.
+    const list = e.target.closest('.wlist');
+    if (list && e.offsetX >= list.clientWidth) return;
+    const resize = !!e.target.closest('#grip');
+    const x0 = e.screenX, y0 = e.screenY;
+    box.setPointerCapture(e.pointerId);
+    state.dragging = true; tip.classList.remove('show');
+    if (app) app.mover(resize ? 'resize' : 'drag');
+    const end = await new Promise((ok) => box.addEventListener('lostpointercapture', ok, { once: true }));
+    state.dragging = false;
+    // Electron sabe cuánto se movió el cursor (la ventana se movía con él).
+    const moved = app ? await app.mover('stop') : Math.abs(end.screenX - x0) + Math.abs(end.screenY - y0) > 4;
+    if (!moved && !resize) { if (app) app.panel(); else location.href = '/'; }
+  });
+  box.addEventListener('contextmenu', (e) => { e.preventDefault(); if (app) app.menu(); });
+}
+
+// Saludo con el nombre de la cuenta, si hay.
+function helloText() { return state.data && state.data.name ? t('helloName', { name: state.data.name }) : t('hello'); }
+// guardar: recordarlo para la próxima vez. avisar: contarle al widget de Electron (que
+// actualiza el menú de la bandeja y la otra ventana); Electron llama con avisar = false.
+function setLang(l, guardar = true, avisar = true) {
+  if (!T[l]) return;
+  if (guardar) { try { localStorage.setItem('lang', l); } catch {} }
+  if (avisar && window.widgetApp && window.widgetApp.idioma) window.widgetApp.idioma(l);
+  if (l === LANG) return;
+  LANG = l;
+  applyLang();
+  $('hello').textContent = helloText();
+  delete $('wprojects').dataset.html;
+  if (state.data) { fillProjects(); render(); }
+}
+document.querySelectorAll('#langs button').forEach((b) => b.onclick = () => setLang(b.dataset.lang));
+
+let rt; addEventListener('resize', () => {
+  clearTimeout(rt);
+  rt = setTimeout(() => { if (!state.data) return; if (WIDGET) renderWidget(); else if (state.tab === 'resumen') renderGrid(); }, WIDGET ? 30 : 120);
+});
+setInterval(() => load(true), 60000);
+load();
+</script>
+</body>
+</html>
