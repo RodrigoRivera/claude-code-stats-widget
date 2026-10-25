@@ -42,32 +42,40 @@ Most Claude usage tools track **plan limits** (the 5-hour and weekly quotas) and
 - **Claude Code** with some sessions in `%USERPROFILE%\.claude\projects`.
 
 ## Install and run
+### 1. Download it
+Put it in a folder you'll keep (the shortcut points there):
+
 ```bash
 git clone https://github.com/RodrigoRivera/claude-code-stats-widget.git
 cd claude-code-stats-widget
 ```
 
-**Just the panel** — double-click **`Abrir Claude Stats.vbs`**. Without the widget installed, it opens the panel in its own Microsoft Edge window. Or run it by hand:
-
-```bash
-node server.js
-```
-
-and open <http://127.0.0.1:4747>.
-
-**With the desktop widget** — install it once (downloads Electron, about 110 MB, into `widget/node_modules`):
+### 2. Install the desktop widget (optional, recommended)
+Once. It downloads Electron (about 110 MB) into `widget/node_modules`:
 
 ```bash
 cd widget
 npm install
 ```
 
-From then on, **`Abrir Claude Stats.vbs`** opens the widget. The widget starts the server by itself if it isn't running, using the Node.js that ships with Electron.
+Without this step you still get the full panel, in its own Microsoft Edge window.
+
+### 3. Create the shortcut
+Double-click **`Crear acceso directo.vbs`**:
+
+- It puts a **Claude Stats** shortcut with the app icon on your desktop. It opens the widget (or the panel, if the widget isn't installed).
+- **Pin it to the taskbar:** right-click the shortcut → *Show more options* → *Pin to taskbar*. Pin this shortcut, not the Edge window: a pinned Edge window opens Edge directly and shows an error if the server isn't running.
+- It asks whether Claude Stats should **start with Windows** (server only, no window). If you use the widget, it's simpler to tick **Start with Windows** in its tray menu instead: it opens the widget at sign-in, and the widget starts the server. Run the script again and answer *No* to undo it.
+- Prefer doing it by hand? `Win + R` → `shell:startup` → add a shortcut to `Abrir Claude Stats.vbs` with ` /fondo` at the end of its target.
+
+### 4. Open it
+Double-click the **Claude Stats** shortcut (or **`Abrir Claude Stats.vbs`**). The widget starts the server by itself if it isn't running, using the Node.js that ships with Electron. Data refreshes every 60 seconds.
 
 - Right-click the widget or the tray icon for: open full panel, show/hide widget, **Always on top**, **Start with Windows**, **Language** (Automatic / Español / English), refresh, quit.
 - **`Cerrar Claude Stats.bat`** stops the widget and the server.
-- **`Crear acceso directo.vbs`** creates a desktop shortcut with the app icon (handy for pinning to the taskbar) and can make the server start with Windows.
 - Launcher options: `Abrir Claude Stats.vbs /panel` opens the panel in Edge without the widget; `/fondo` starts only the server.
+
+**Without the launchers:** run `node server.js` and open <http://127.0.0.1:4747>.
 
 ## Where the data comes from
 - Claude Code's local logs: `%USERPROFILE%\.claude\projects\**\*.jsonl`.

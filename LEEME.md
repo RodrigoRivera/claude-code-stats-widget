@@ -36,8 +36,10 @@ Réplica local del panel de uso que tenía Claude Code en la pantalla de "Nueva 
    ```
    git clone https://github.com/RodrigoRivera/claude-code-stats-widget.git
    ```
-2. Doble clic en **Abrir Claude Stats.vbs**. Abre el widget; si el widget no está instalado, abre el panel en una ventana propia de Edge, como antes.
-3. Para cerrarlo del todo: **Cerrar Claude Stats.bat** (cierra el widget y detiene el servidor).
+2. Si quieres el widget (recomendado), instálalo una vez: ver *Widget de escritorio* más abajo.
+3. Crea el acceso directo: doble clic en **Crear acceso directo.vbs**. Deja **Claude Stats** con su ícono en el escritorio, para anclarlo a la barra de tareas y, si quieres, que arranque con Windows (ver *Acceso directo, barra de tareas y arranque con Windows* más abajo).
+4. Ábrelo con ese acceso directo (o con doble clic en **Abrir Claude Stats.vbs**). Abre el widget; si el widget no está instalado, abre el panel en una ventana propia de Edge.
+5. Para cerrarlo del todo: **Cerrar Claude Stats.bat** (cierra el widget y detiene el servidor).
 
 Se actualiza solo cada 60 segundos.
 

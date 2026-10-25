@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+- README: step-by-step install, including how to create the desktop shortcut, pin it to the taskbar and start with Windows.
+
 ## [1.0.0] - 2026-10-25
 
 First public release.
