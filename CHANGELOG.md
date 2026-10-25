@@ -5,8 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-25
+
+### Added
+- **`Instalar Claude Stats.bat`**: one double-click installs the desktop widget, puts the **Claude Stats** icon on the desktop and opens the widget. Safe to run again (for example, after updating).
+- `Crear acceso directo.vbs /escritorio` creates only the desktop icon, without questions (used by the installer).
+
 ### Changed
-- README: step-by-step install, including how to create the desktop shortcut, pin it to the taskbar and start with Windows.
+- README and LEEME: install in 4 simple steps (Node.js, download the release ZIP, run the installer, make it yours), plus everyday use, updating and troubleshooting.
+- Repository tidied up: community guides and README screenshots moved into `.github/`, and the ZIP downloaded from GitHub no longer includes `.github/`, `.gitignore` or `.gitattributes` — only what you need to run it.
 
 ## [1.0.0] - 2026-10-25
 
@@ -24,5 +31,6 @@ First public release.
 - Windows launchers: open the widget (or the panel in Edge), stop everything, and create a desktop shortcut.
 - Zero-dependency Node.js server that listens only on `127.0.0.1` and never reads credentials.
 
-[Unreleased]: https://github.com/RodrigoRivera/claude-code-stats-widget/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/RodrigoRivera/claude-code-stats-widget/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/RodrigoRivera/claude-code-stats-widget/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/RodrigoRivera/claude-code-stats-widget/releases/tag/v1.0.0

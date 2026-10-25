@@ -45,4 +45,4 @@ There are no automated tests yet, so please check by hand:
 - Update `README.md` and `LEEME.md` if the change is visible to users, and add a line to `CHANGELOG.md` under **Unreleased**.
 - Add a screenshot for visual changes.
 
-By contributing, you agree that your contributions are licensed under the [MIT License](LICENSE), and to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+By contributing, you agree that your contributions are licensed under the [MIT License](../LICENSE), and to follow the [Code of Conduct](CODE_OF_CONDUCT.md).

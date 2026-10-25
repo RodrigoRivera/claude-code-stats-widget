@@ -6,7 +6,7 @@ body:
     attributes:
       value: |
         Thanks for reporting! English or Spanish are both fine (*también en español*).
-        **Security problems:** don't report them here — see [SECURITY.md](https://github.com/RodrigoRivera/claude-code-stats-widget/blob/main/SECURITY.md).
+        **Security problems:** don't report them here — see [SECURITY.md](https://github.com/RodrigoRivera/claude-code-stats-widget/blob/main/.github/SECURITY.md).
   - type: textarea
     id: what
     attributes:

@@ -7,12 +7,12 @@ Réplica local del panel de uso que tenía Claude Code en la pantalla de "Nueva 
 > **Proyecto no oficial.** No está afiliado, respaldado ni patrocinado por Anthropic. "Claude" y "Claude Code" son marcas de Anthropic, PBC.
 
 <p align="center">
-  <img src="docs/es/panel-resumen.png" alt="Panel de Claude Stats: sesiones, mensajes, tokens totales, días activos, hora pico, modelo favorito y heatmap de días" width="640">
+  <img src=".github/assets/es/panel-resumen.png" alt="Panel de Claude Stats: sesiones, mensajes, tokens totales, días activos, hora pico, modelo favorito y heatmap de días" width="640">
 </p>
 
 <p align="center">
-  <img src="docs/es/widget-hoy.png" alt="Widget, pestaña Resumen: tokens de hoy, racha, tiempo activo de hoy y heatmap de 16 semanas" width="420">
-  <img src="docs/es/widget-total.png" alt="Widget, pestaña Total: tokens totales desde el primer día, comparación con The Lord of the Rings, días activos, récord, sesiones, mensajes y tiempo activo" width="420">
+  <img src=".github/assets/es/widget-hoy.png" alt="Widget, pestaña Resumen: tokens de hoy, racha, tiempo activo de hoy y heatmap de 16 semanas" width="420">
+  <img src=".github/assets/es/widget-total.png" alt="Widget, pestaña Total: tokens totales desde el primer día, comparación con The Lord of the Rings, días activos, récord, sesiones, mensajes y tiempo activo" width="420">
 </p>
 
 ## Qué muestra
@@ -27,38 +27,48 @@ Réplica local del panel de uso que tenía Claude Code en la pantalla de "Nueva 
 
 - **Widget de escritorio**: una cajita semitransparente con tres pestañitas: **Resumen** (heatmap de las últimas ~16 semanas, tokens, racha actual y tiempo activo), **Proyectos** y **Total**, y un selector de período **Hoy · 30d · Todo** (ver más abajo).
 
-## Requisitos
-- Windows con Node.js (cualquier versión 18 o superior).
-- Para el widget: instalarlo una vez (ver *Widget de escritorio*). Sin widget, el panel se abre en Microsoft Edge (viene con Windows).
+## Instalación (5 minutos)
+Necesitas **Windows 10/11** y haber usado **Claude Code** al menos una vez en ese PC (lee sus registros).
 
-## Uso
-1. Descarga el proyecto y déjalo en una carpeta fija, por ejemplo `C:\Users\<tu usuario>\claude-code-stats-widget`:
-   ```
-   git clone https://github.com/RodrigoRivera/claude-code-stats-widget.git
-   ```
-2. Si quieres el widget (recomendado), instálalo una vez: ver *Widget de escritorio* más abajo.
-3. Crea el acceso directo: doble clic en **Crear acceso directo.vbs**. Deja **Claude Stats** con su ícono en el escritorio, para anclarlo a la barra de tareas y, si quieres, que arranque con Windows (ver *Acceso directo, barra de tareas y arranque con Windows* más abajo).
-4. Ábrelo con ese acceso directo (o con doble clic en **Abrir Claude Stats.vbs**). Abre el widget; si el widget no está instalado, abre el panel en una ventana propia de Edge.
-5. Para cerrarlo del todo: **Cerrar Claude Stats.bat** (cierra el widget y detiene el servidor).
+### 1. Instala Node.js
+Descarga la versión **LTS** desde <https://nodejs.org> e instálala con las opciones por defecto. Si ya lo tienes, sáltate este paso (`node -v` en una terminal muestra la versión; sirve la 18 o superior).
 
-Se actualiza solo cada 60 segundos.
+### 2. Descarga Claude Stats
+- En el [último release](https://github.com/RodrigoRivera/claude-code-stats-widget/releases/latest), descarga **Source code (zip)**.
+- Clic derecho en el ZIP → **Extraer todo…** y elige una carpeta que vayas a conservar, por ejemplo `C:\Users\<tu usuario>\claude-code-stats-widget`. El ícono del escritorio apunta ahí, así que no lo dejes en *Descargas* si sueles limpiarla.
 
-Otras formas de abrir `Abrir Claude Stats.vbs` (agregando el texto al final del destino de un acceso directo):
-- ` /panel`: el panel completo en Edge, sin widget.
-- ` /fondo`: solo el servidor, sin abrir ventana.
+¿Prefieres git? `git clone https://github.com/RodrigoRivera/claude-code-stats-widget.git`
+
+### 3. Doble clic en `Instalar Claude Stats.bat`
+Hace todo en más o menos un minuto:
+1. Instala el widget de escritorio (descarga Electron, unos 110 MB, dentro de la carpeta `widget`).
+2. Deja el ícono **Claude Stats** en el escritorio.
+3. Abre el widget abajo a la derecha de la pantalla.
+
+Si Windows muestra *"Windows protegió su PC"*, haz clic en **Más información** → **Ejecutar de todas formas** (aparece con archivos descargados de internet).
+
+### 4. Déjalo a tu gusto
+- **Que arranque con Windows:** clic derecho en el widget (o en el ícono de Claude Stats en la bandeja, junto al reloj) → **Iniciar con Windows**.
+- **Anclarlo a la barra de tareas:** clic derecho en el ícono del escritorio → *Mostrar más opciones* → *Anclar a la barra de tareas*.
+- **Moverlo y cambiar el tamaño:** arrastra el widget; arrastra su esquina de abajo a la derecha para agrandarlo. Recuerda dónde lo dejas.
+- **Panel completo:** haz clic en el widget.
+
+## Uso diario
+- Ábrelo con el ícono **Claude Stats** del escritorio (o con `Abrir Claude Stats.vbs`). Levanta su servidor local solo, con el Node.js que trae Electron. Se actualiza cada 60 segundos.
+- **`Cerrar Claude Stats.bat`** cierra el widget y detiene el servidor.
+- **Actualizar:** descarga el release nuevo, extráelo encima de la misma carpeta y vuelve a ejecutar `Instalar Claude Stats.bat`. Tu historial se mantiene (está en `%USERPROFILE%\.claude\claude-stats`, no en esa carpeta).
+
+### Problemas comunes
+| Lo que ves | Solución |
+|---|---|
+| Se abre el panel en Edge en vez del widget | El widget no está instalado: vuelve a ejecutar `Instalar Claude Stats.bat` (necesita internet). |
+| Windows bloquea un `.vbs` o `.bat` | Clic derecho en el archivo → *Propiedades* → marca **Desbloquear** → Aceptar. |
+| El widget muestra "—" o no tiene cuadritos | Claude Code todavía no se ha usado en este PC (`%USERPROFILE%\.claude\projects` está vacía). Cada computador cuenta su propio uso. |
+| "No encontré Node.js" | Instala Node.js (paso 1) y vuelve a ejecutar el instalador. |
 
 ## Widget de escritorio
-### Instalarlo (una vez)
-Abre una terminal en la carpeta `widget` y corre:
-
-```
-npm install
-```
-
-Descarga Electron (unos 110 MB) dentro de `widget\node_modules`. No toca nada fuera de esa carpeta.
-
 ### Usarlo
-- **Abrir Claude Stats.vbs** lo abre. Si el servidor no está andando, el widget lo levanta solo (no hace falta tener la consola abierta). Volver a abrirlo no crea otro widget, solo muestra el que ya está.
+- El ícono del escritorio (o **Abrir Claude Stats.vbs**) lo abre. Si el servidor no está andando, el widget lo levanta solo (no hace falta tener la consola abierta). Volver a abrirlo no crea otro widget, solo muestra el que ya está.
 - **Arrastra** el widget para moverlo. Para cambiar el tamaño, arrastra la **esquina de abajo a la derecha** (aparece al pasar el mouse). Más ancho = más semanas; más alto = cuadritos más grandes. Recuerda dónde lo dejaste y de qué tamaño.
 - **Clic** (sin arrastrar) abre el **panel completo** en su propia ventana.
 - Arriba tiene tres **pestañitas** (se acuerda de la última que usaste):
@@ -66,7 +76,7 @@ Descarga Electron (unos 110 MB) dentro de `widget\node_modules`. No toca nada fu
   - **Proyectos**: tus proyectos ordenados por tiempo activo, con su barra, tiempo y tokens. Si no caben, usa la rueda del mouse.
   - **Total**: tokens totales en grande desde tu primer día, con la cifra completa y la comparación con The Lord of the Rings, tus días activos y tu día récord, más sesiones, mensajes y tiempo activo de todo el historial. Si el widget es muy angosto, la cifra completa se esconde y queda la comparación.
 - A la derecha de las pestañas está el **período**: **Hoy · 30d · Todo** (también se recuerda).
-  - En **Resumen** cambia los tokens y el tiempo activo (por ejemplo "Tokens 7 días" o "Tokens totales") y atenúa en el heatmap los días que quedan fuera. La racha no cambia.
+  - En **Resumen** cambia los tokens y el tiempo activo (por ejemplo "Tokens 30 días" o "Tokens totales") y atenúa en el heatmap los días que quedan fuera. La racha no cambia.
   - En **Proyectos** muestra los proyectos de ese período.
   - En **Total** no aparece, porque esa pestaña siempre es todo el historial.
   - 30d se cuenta hacia atrás desde hoy, igual que en el panel.
@@ -82,16 +92,12 @@ Descarga Electron (unos 110 MB) dentro de `widget\node_modules`. No toca nada fu
 
 Para probar el modo compacto sin Electron: http://127.0.0.1:4747/?widget=1 (ahí un clic lleva al panel).
 
-## Acceso directo, barra de tareas y arranque con Windows
-Doble clic en **Crear acceso directo.vbs**:
-- Deja un acceso directo **Claude Stats** con su ícono en el escritorio (abre el widget, o el panel si el widget no está instalado). Para anclarlo: clic derecho sobre él → *Mostrar más opciones* → *Anclar a la barra de tareas*.
-- Te pregunta si quieres que **arranque con Windows**. Si dices que sí, al iniciar sesión se levanta solo el servidor (sin abrir ventana). Si lo vuelves a ejecutar y dices que no, se quita.
-
-Si usas el widget, es más simple marcar *Iniciar con Windows* en el menú de la bandeja: abre el widget al iniciar sesión y el widget levanta el servidor. No hace falta tener las dos opciones activadas, pero tampoco molesta.
-
-Conviene anclar ese acceso directo y no la ventana de Edge: la ventana anclada abre Edge directo y, si el servidor no está andando, muestra un error.
-
-Si lo prefieres a mano: `Win + R` → `shell:startup` → pega ahí un acceso directo a `Abrir Claude Stats.vbs` y agrega ` /fondo` al final del destino.
+## Avanzado
+- **Solo el panel, sin widget:** corre `node server.js` y abre <http://127.0.0.1:4747> (`--no-open` lo levanta sin abrir ventana). El servidor funciona en cualquier sistema con Node.js.
+- **El widget a mano:** `cd widget`, `npm install`, `npm start`.
+- **El acceso directo a mano:** `Crear acceso directo.vbs` crea el ícono del escritorio y pregunta si quieres que el servidor solo (sin ventana) arranque con Windows; si lo vuelves a ejecutar y dices que no, se quita. O bien: `Win + R` → `shell:startup` → un acceso directo a `Abrir Claude Stats.vbs` con ` /fondo` al final del destino.
+- **Opciones del lanzador:** `Abrir Claude Stats.vbs /panel` abre el panel en Edge sin widget; `/fondo` arranca solo el servidor.
+- Conviene anclar el ícono del escritorio y no la ventana de Edge del panel: la ventana anclada abre Edge directo y, si el servidor no está andando, muestra un error.
 
 ## De dónde salen los datos
 - Lee los registros de Claude Code en `%USERPROFILE%\.claude\projects\` (solo fechas, carpeta, modelo y tokens; nunca el texto de los mensajes). Para el saludo lee solo el nombre de tu cuenta (`displayName`) de `%USERPROFILE%\.claude.json`. Nunca lee tus credenciales.
@@ -109,7 +115,7 @@ Si lo prefieres a mano: `Win + R` → `shell:startup` → pega ahí un acceso di
 - **Cambiar el nombre del saludo o el puerto:** variables de entorno `CLAUDE_STATS_NAME` y `CLAUDE_STATS_PORT`. Por defecto el saludo usa el nombre de tu cuenta de Claude; si no lo encuentra, dice solo "¿Qué sigue?".
 
 ## Contribuir
-Los reportes de errores, ideas y pull requests son bienvenidos, en español o en inglés. Para empezar, mira [CONTRIBUTING.md](CONTRIBUTING.md) (en inglés), el [código de conducta](CODE_OF_CONDUCT.md) y [SECURITY.md](SECURITY.md) para reportar un problema de seguridad en privado. Los cambios de cada versión están en el [CHANGELOG](CHANGELOG.md).
+Los reportes de errores, ideas y pull requests son bienvenidos, en español o en inglés. Para empezar, mira [CONTRIBUTING.md](.github/CONTRIBUTING.md) (en inglés), el [código de conducta](.github/CODE_OF_CONDUCT.md) y [SECURITY.md](.github/SECURITY.md) para reportar un problema de seguridad en privado. Los cambios de cada versión están en el [CHANGELOG](CHANGELOG.md).
 
 ## Licencia
 [MIT](LICENSE).

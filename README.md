@@ -9,12 +9,12 @@ Claude Desktop used to show a usage card on the Code tab's new-session screen: s
 > **Unofficial project.** Not affiliated with, endorsed or sponsored by Anthropic. "Claude" and "Claude Code" are trademarks of Anthropic, PBC.
 
 <p align="center">
-  <img src="docs/panel-resumen.png" alt="Claude Stats panel: sessions, messages, total tokens, active days, peak hour, favorite model and a daily heatmap" width="640">
+  <img src=".github/assets/panel-resumen.png" alt="Claude Stats panel: sessions, messages, total tokens, active days, peak hour, favorite model and a daily heatmap" width="640">
 </p>
 
 <p align="center">
-  <img src="docs/widget-hoy.png" alt="Desktop widget, Overview tab: today's tokens, current streak, today's active time, a 16-week heatmap and the Today / 30d / All period selector" width="420">
-  <img src="docs/widget-total.png" alt="Desktop widget, Total tab: all-time tokens since the first day, the Lord of the Rings comparison, active days, record day, sessions, messages and active time" width="420">
+  <img src=".github/assets/widget-hoy.png" alt="Desktop widget, Overview tab: today's tokens, current streak, today's active time, a 16-week heatmap and the Today / 30d / All period selector" width="420">
+  <img src=".github/assets/widget-total.png" alt="Desktop widget, Total tab: all-time tokens since the first day, the Lord of the Rings comparison, active days, record day, sessions, messages and active time" width="420">
 </p>
 
 ## Why another usage tool?
@@ -36,46 +36,52 @@ Most Claude usage tools track **plan limits** (the 5-hour and weekly quotas) and
 
 **Language:** English or Spanish. By default it follows your system language (Spanish for `es-*`, English otherwise). Change it with **Español · English** under the panel, or with **Language** in the widget's tray menu; the panel and the widget stay in sync. You can also force it in the address: `http://127.0.0.1:4747/?lang=en`.
 
-## Requirements
-- **Windows 10/11** (the launchers are `.vbs`/`.bat`; the server itself runs anywhere Node runs).
-- **Node.js 18+**.
-- **Claude Code** with some sessions in `%USERPROFILE%\.claude\projects`.
+## Install (5 minutes)
+You need **Windows 10/11** and **Claude Code** used at least once on that PC (it reads its logs).
 
-## Install and run
-### 1. Download it
-Put it in a folder you'll keep (the shortcut points there):
+### 1. Install Node.js
+Download the **LTS** version from <https://nodejs.org> and install it with the default options. Skip this if you already have it (`node -v` in a terminal shows the version; 18 or newer is fine).
 
-```bash
-git clone https://github.com/RodrigoRivera/claude-code-stats-widget.git
-cd claude-code-stats-widget
-```
+### 2. Download Claude Stats
+- On the [latest release](https://github.com/RodrigoRivera/claude-code-stats-widget/releases/latest), download **Source code (zip)**.
+- Right-click the ZIP → **Extract All…** and pick a folder you'll keep, for example `C:\Users\<you>\claude-code-stats-widget`. The desktop icon will point there, so don't leave it in *Downloads* if you clean that folder.
 
-### 2. Install the desktop widget (optional, recommended)
-Once. It downloads Electron (about 110 MB) into `widget/node_modules`:
+Using git instead? `git clone https://github.com/RodrigoRivera/claude-code-stats-widget.git`
 
-```bash
-cd widget
-npm install
-```
+### 3. Double-click `Instalar Claude Stats.bat`
+It does everything in about a minute:
+1. Installs the desktop widget (downloads Electron, ~110 MB, into the `widget` folder).
+2. Puts a **Claude Stats** icon on your desktop.
+3. Opens the widget at the bottom right of your screen.
 
-Without this step you still get the full panel, in its own Microsoft Edge window.
+If Windows shows *"Windows protected your PC"*, click **More info** → **Run anyway** (it appears for files downloaded from the internet).
 
-### 3. Create the shortcut
-Double-click **`Crear acceso directo.vbs`**:
+### 4. Make it yours
+- **Start with Windows:** right-click the widget (or the Claude Stats icon in the tray, next to the clock) → **Start with Windows**.
+- **Pin it to the taskbar:** right-click the desktop icon → *Show more options* → *Pin to taskbar*.
+- **Move and resize:** drag the widget; drag its bottom-right corner to resize. It remembers where you leave it.
+- **Full panel:** click the widget.
 
-- It puts a **Claude Stats** shortcut with the app icon on your desktop. It opens the widget (or the panel, if the widget isn't installed).
-- **Pin it to the taskbar:** right-click the shortcut → *Show more options* → *Pin to taskbar*. Pin this shortcut, not the Edge window: a pinned Edge window opens Edge directly and shows an error if the server isn't running.
-- It asks whether Claude Stats should **start with Windows** (server only, no window). If you use the widget, it's simpler to tick **Start with Windows** in its tray menu instead: it opens the widget at sign-in, and the widget starts the server. Run the script again and answer *No* to undo it.
-- Prefer doing it by hand? `Win + R` → `shell:startup` → add a shortcut to `Abrir Claude Stats.vbs` with ` /fondo` at the end of its target.
-
-### 4. Open it
-Double-click the **Claude Stats** shortcut (or **`Abrir Claude Stats.vbs`**). The widget starts the server by itself if it isn't running, using the Node.js that ships with Electron. Data refreshes every 60 seconds.
-
+## Everyday use
+- Open it with the **Claude Stats** desktop icon (or `Abrir Claude Stats.vbs`). It starts its local server by itself, using the Node.js that ships with Electron. Data refreshes every 60 seconds.
 - Right-click the widget or the tray icon for: open full panel, show/hide widget, **Always on top**, **Start with Windows**, **Language** (Automatic / Español / English), refresh, quit.
-- **`Cerrar Claude Stats.bat`** stops the widget and the server.
-- Launcher options: `Abrir Claude Stats.vbs /panel` opens the panel in Edge without the widget; `/fondo` starts only the server.
+- **`Cerrar Claude Stats.bat`** closes the widget and stops the server.
+- **Updating:** download the new release, extract it over the same folder, and run `Instalar Claude Stats.bat` again. Your history is kept (it lives in `%USERPROFILE%\.claude\claude-stats`, not in that folder).
 
-**Without the launchers:** run `node server.js` and open <http://127.0.0.1:4747>.
+### Troubleshooting
+| What you see | Fix |
+|---|---|
+| The panel opens in Edge instead of the widget | The widget isn't installed: run `Instalar Claude Stats.bat` again (it needs internet). |
+| Windows blocks a `.vbs` or `.bat` file | Right-click it → *Properties* → tick **Unblock** → OK. |
+| The widget shows "—" or no squares | Claude Code hasn't been used on this PC yet (`%USERPROFILE%\.claude\projects` is empty). Each computer counts its own usage. |
+| "Node.js was not found" | Install Node.js (step 1) and run the installer again. |
+
+## Advanced
+- **Panel only, without the widget:** run `node server.js` and open <http://127.0.0.1:4747> (`--no-open` starts it without a window). The server runs anywhere Node.js runs.
+- **Widget by hand:** `cd widget`, `npm install`, `npm start`.
+- **Shortcut by hand:** `Crear acceso directo.vbs` creates the desktop icon and asks whether the server alone should start with Windows; run it again and answer *No* to undo. Or `Win + R` → `shell:startup` → a shortcut to `Abrir Claude Stats.vbs` with ` /fondo` at the end of its target.
+- **Launcher options:** `Abrir Claude Stats.vbs /panel` opens the panel in Edge without the widget; `/fondo` starts only the server.
+- Pin the desktop icon, not the panel's Edge window: a pinned Edge window opens Edge directly and shows an error if the server isn't running.
 
 ## Where the data comes from
 - Claude Code's local logs: `%USERPROFILE%\.claude\projects\**\*.jsonl`.
@@ -106,10 +112,10 @@ Nothing leaves your computer.
 - `server.js` — reads the logs, keeps the history and serves the page and the API. No dependencies.
 - `index.html` — the whole interface (HTML + CSS + JS, no build step). `/?widget=1` is the compact widget view.
 - `widget/` — the Electron desktop widget (`main.js`, `preload.js`). The only folder with an npm dependency (`electron`, pinned).
-- `*.vbs` / `*.bat` — Windows launchers.
+- `*.vbs` / `*.bat` — Windows launchers and the installer.
 
 ## Contributing
-Bug reports, ideas and pull requests are welcome, in English or Spanish. See [CONTRIBUTING.md](CONTRIBUTING.md) to get started, the [Code of Conduct](CODE_OF_CONDUCT.md), and [SECURITY.md](SECURITY.md) to report a security problem privately. Changes are listed in the [CHANGELOG](CHANGELOG.md).
+Bug reports, ideas and pull requests are welcome, in English or Spanish. See [CONTRIBUTING.md](.github/CONTRIBUTING.md) to get started, the [Code of Conduct](.github/CODE_OF_CONDUCT.md), and [SECURITY.md](.github/SECURITY.md) to report a security problem privately. Changes are listed in the [CHANGELOG](CHANGELOG.md).
 
 ## License
 [MIT](LICENSE).

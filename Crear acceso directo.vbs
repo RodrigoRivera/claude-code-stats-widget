@@ -1,5 +1,6 @@
 ' Crea un acceso directo "Claude Stats" con su ícono en el escritorio (para anclarlo
 ' a la barra de tareas) y, si quieres, otro en Inicio para que arranque con Windows.
+' /escritorio: solo crea el del escritorio, sin preguntar nada (lo usa el instalador).
 ' Opcional: una carpeta como argumento crea los accesos ahí, sin preguntar (para pruebas).
 Set fso = CreateObject("Scripting.FileSystemObject")
 Set sh = CreateObject("WScript.Shell")
@@ -36,6 +37,10 @@ Sub Crear(ruta, argumentos, descripcion)
 End Sub
 
 If WScript.Arguments.Count > 0 Then
+  If LCase(WScript.Arguments(0)) = "/escritorio" Then
+    Crear sh.SpecialFolders("Desktop") & "\Claude Stats.lnk", "", dAbre
+    WScript.Quit
+  End If
   destino = WScript.Arguments(0)
   Crear destino & "\Claude Stats.lnk", "", dAbre
   Crear destino & "\Claude Stats (inicio).lnk", " /fondo", dFondo
