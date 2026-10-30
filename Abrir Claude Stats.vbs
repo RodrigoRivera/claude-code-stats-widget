@@ -3,6 +3,8 @@
 ' Si el widget no está instalado (falta "npm install" en la carpeta widget), abre el panel en Edge como antes.
 ' /panel: abre el panel completo en Edge, sin widget.
 ' /fondo: solo arranca el servidor, sin abrir ventana (lo usa el arranque con Windows).
+' /sync: actualiza el resumen de este PC en la carpeta compartida y termina, sin ventanas
+'        ni avisos (lo usa la tarea programada de instalar-sync.ps1).
 Set fso = CreateObject("Scripting.FileSystemObject")
 Set sh = CreateObject("WScript.Shell")
 carpeta = fso.GetParentFolderName(WScript.ScriptFullName)
@@ -15,6 +17,17 @@ electron = carpeta & "\widget\node_modules\electron\dist\electron.exe"
 
 If modo = "" And fso.FileExists(electron) Then
   sh.Run """" & electron & """ """ & carpeta & "\widget""", 1, False
+  WScript.Quit
+End If
+
+If modo = "/sync" Then
+  ' Con Node.js si está; si no, con el Node que trae Electron. Sin avisos: corre cada hora.
+  If sh.Run("cmd /c where node", 0, True) = 0 Then
+    sh.Run "cmd /c node """ & carpeta & "\server.js"" --sync", 0, True
+  ElseIf fso.FileExists(electron) Then
+    sh.Environment("Process")("ELECTRON_RUN_AS_NODE") = "1"
+    sh.Run """" & electron & """ """ & carpeta & "\server.js"" --sync", 0, True
+  End If
   WScript.Quit
 End If
 

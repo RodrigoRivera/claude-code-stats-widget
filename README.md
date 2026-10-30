@@ -25,6 +25,7 @@ Most Claude usage tools track **plan limits** (the 5-hour and weekly quotas) and
 - **Active time**, not just tokens: the time between consecutive messages of a session, ignoring breaks longer than 5 minutes.
 - **Projects:** time, tokens and sessions per project, a mini heatmap for each, and a filter that recalculates every tab for one project.
 - **Desktop widget** with tabs (Overview / Projects / Total), a Today / 30d / All period selector, tray icon, *Always on top* and *Start with Windows*.
+- **Several PCs, one view.** Use Claude Code on more than one computer? With a shared OneDrive folder, it adds them up and shows how much each PC contributed.
 - **English and Spanish.** It follows your system language; switch it under the panel or from the tray menu.
 - **Private and light.** The server is plain Node.js with **zero dependencies**, listens only on `127.0.0.1`, makes no network requests, and only reads dates, folders, models and token counts — never your messages or credentials.
 
@@ -76,20 +77,49 @@ If Windows shows *"Windows protected your PC"*, click **More info** → **Run an
 | The widget shows "—" or no squares | Claude Code hasn't been used on this PC yet (`%USERPROFILE%\.claude\projects` is empty). Each computer counts its own usage. |
 | "Node.js was not found" | Install Node.js (step 1) and run the installer again. |
 
+## Several PCs (sync with OneDrive)
+If you use Claude Code on more than one computer, Claude Stats can add them all up. It uses a shared OneDrive folder: each PC leaves a summary of its history there and reads the others'.
+
+It's **off** until the folder `OneDrive\claude-stats` exists. Without it, everything works as before, with that PC's data only.
+
+### On the first PC
+1. Make sure OneDrive is signed in with your account.
+2. In the Claude Stats folder, open PowerShell and run:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File instalar-sync.ps1
+   ```
+   It creates the folder, registers a task that updates this PC's summary when you sign in and every hour (no windows), and does the first sync.
+
+### On the second PC
+1. Install Claude Stats as usual (steps 1–3 of *Install*).
+2. Sign in to OneDrive with **the same account**, and wait until `OneDrive\claude-stats` shows up with the first PC's file.
+3. *(Optional)* Give each PC a friendly name: open `%USERPROFILE%\.claude\claude-stats\config.json` and change `"deviceName"` (for example `"Notebook"`). Renaming is safe: the old file is replaced, not counted twice.
+4. Run `instalar-sync.ps1` there too, as on the first PC.
+5. Open the full panel: a **All PCs / <PC>** selector appears next to the project filter, and hovering a day shows how much each PC contributed.
+
+### Good to know
+- Each PC writes its full history to `<folder>\<PC name>.json`: dates, project folders, models and counts, never the text of your messages. OneDrive uploads it to your account.
+- Totals are added up without repeating sessions. OneDrive conflict copies are ignored.
+- While the widget is open, the summary is also refreshed every minute; the scheduled task covers the times it's closed.
+- Another folder (Google Drive, Dropbox, a network share): set `"syncDir"` in `config.json`.
+- Remove the task: `instalar-sync.ps1 -Quitar`. Stop syncing: delete the folder or set `"syncDir": ""`.
+- The widget always shows all PCs; the selector is in the full panel.
+
 ## Advanced
 - **Panel only, without the widget:** run `node server.js` and open <http://127.0.0.1:4747> (`--no-open` starts it without a window). The server runs anywhere Node.js runs.
 - **Widget by hand:** `cd widget`, `npm install`, `npm start`.
 - **Shortcut by hand:** `Crear acceso directo.vbs` creates the desktop icon and asks whether the server alone should start with Windows; run it again and answer *No* to undo. Or `Win + R` → `shell:startup` → a shortcut to `Abrir Claude Stats.vbs` with ` /fondo` at the end of its target.
-- **Launcher options:** `Abrir Claude Stats.vbs /panel` opens the panel in Edge without the widget; `/fondo` starts only the server.
+- **Launcher options:** `Abrir Claude Stats.vbs /panel` opens the panel in Edge without the widget; `/fondo` starts only the server; `/sync` updates the multi-PC summary and exits, with no windows.
 - Pin the desktop icon, not the panel's Edge window: a pinned Edge window opens Edge directly and shows an error if the server isn't running.
 
 ## Where the data comes from
 - Claude Code's local logs: `%USERPROFILE%\.claude\projects\**\*.jsonl`.
 - Its own history: `%USERPROFILE%\.claude\claude-stats\days.json` (one summary per day).
 - Widget position and settings: `%USERPROFILE%\.claude\claude-stats\widget.json`.
+- Sync settings: `%USERPROFILE%\.claude\claude-stats\config.json` (`syncDir`, `deviceName` and an internal `deviceId`).
 - For the greeting it reads only your account's `displayName` from `%USERPROFILE%\.claude.json`.
 
-Nothing leaves your computer.
+Nothing leaves your computer, unless you turn on [multi-PC sync](#several-pcs-sync-with-onedrive): then a summary of your history (no message text) goes to the folder you chose, and your cloud service (OneDrive, etc.) uploads it to your account.
 
 ## How it counts
 - **Message:** each `user` or `assistant` log line with a unique `uuid` (resumed sessions copy lines, so they are de-duplicated).
@@ -105,14 +135,17 @@ Nothing leaves your computer.
 | `CLAUDE_STATS_NAME` | Name in the greeting (defaults to your Claude account name) |
 | `CLAUDE_STATS_PORT` | Server port (default `4747`) |
 | `CLAUDE_CONFIG_DIR` | Claude Code config folder, if you moved it |
+| `CLAUDE_STATS_SYNC_DIR` | Shared folder for multi-PC sync (overrides `syncDir` in `config.json`) |
+| `CLAUDE_STATS_DEVICE` | This PC's name for sync (overrides `deviceName`) |
 
-`node server.js --no-open` starts the server without opening a window. `GET /api/stats` returns the aggregated data as JSON (`?refresh=1` skips the 20-second cache).
+`node server.js --no-open` starts the server without opening a window. `node server.js --sync` updates the history and this PC's summary in the shared folder, then exits (that's what the scheduled task runs, through `Abrir Claude Stats.vbs /sync`). `GET /api/stats` returns the aggregated data as JSON (`?refresh=1` skips the 20-second cache).
 
 ## Project layout
 - `server.js` — reads the logs, keeps the history and serves the page and the API. No dependencies.
 - `index.html` — the whole interface (HTML + CSS + JS, no build step). `/?widget=1` is the compact widget view.
 - `widget/` — the Electron desktop widget (`main.js`, `preload.js`). The only folder with an npm dependency (`electron`, pinned).
 - `*.vbs` / `*.bat` — Windows launchers and the installer.
+- `instalar-sync.ps1` — registers the multi-PC sync task in Windows Task Scheduler.
 
 ## Contributing
 Bug reports, ideas and pull requests are welcome, in English or Spanish. See [CONTRIBUTING.md](.github/CONTRIBUTING.md) to get started, the [Code of Conduct](.github/CODE_OF_CONDUCT.md), and [SECURITY.md](.github/SECURITY.md) to report a security problem privately. Changes are listed in the [CHANGELOG](CHANGELOG.md).

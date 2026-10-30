@@ -35,7 +35,7 @@ There are no automated tests yet, so please check by hand:
 - **No new dependencies.** `server.js` and `index.html` use only Node.js and the browser. The only npm dependency is `electron` (pinned) inside `widget/`. Ask in an issue before adding anything.
 - **Calculation rules** (messages, tokens, active time, projects) are described in the README under *How it counts*. Don't change them without discussing it first: people compare these numbers with other tools.
 - **Every user-facing text goes in both languages**: add it to the `T` dictionary in `index.html` (`t('key')`, plurals with `pl(n, 'key')`, fixed HTML text with `data-i18n`), and tray menu texts to `M` in `widget/main.js`. In English, use the names of the original panel (Overview, Sessions, Total tokens, All / 30d / 7d).
-- **Privacy:** never read message text or credentials, and never send data anywhere. The server only listens on `127.0.0.1`.
+- **Privacy:** never read message text or credentials, and never send data anywhere. The server only listens on `127.0.0.1`. The one exception is opt-in multi-PC sync, which writes a history summary (no message text) to a folder the user chose.
 - **Old history:** days saved by older versions may lack `minutes`, `projects`, `hours` or `models`. Treat missing fields as 0 / empty.
 - **Windows launchers** (`.vbs`, `.bat`) must keep CRLF line endings, and the `.vbs` files must stay in ANSI / Windows-1252 (VBScript can't read UTF-8). `.gitattributes` keeps git from changing them.
 - Code comments are in Spanish; English comments are fine too.

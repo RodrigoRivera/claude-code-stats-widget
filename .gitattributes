@@ -1,7 +1,9 @@
 # Los lanzadores de Windows van tal cual: CRLF y, los .vbs, en ANSI (VBScript no lee UTF-8).
+# El .ps1 va en UTF-8 con BOM (PowerShell 5.1 lee como ANSI los archivos sin BOM).
 # Así git no les cambia los finales de línea al clonar en otro PC.
 *.vbs -text
 *.bat -text
+*.ps1 -text
 
 # Lo que solo sirve en la página de GitHub (capturas del README, guías de la comunidad,
 # plantillas) y la configuración de git no van en el ZIP que se descarga desde GitHub.

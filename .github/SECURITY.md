@@ -6,6 +6,7 @@ Claude Stats reads Claude Code's local logs on your computer, so security and pr
 - It reads only dates, project folders, model names and token counts from `~/.claude/projects/**/*.jsonl` — never the text of your messages.
 - For the greeting, it reads only your account's `displayName` from `~/.claude.json`. It never reads `~/.claude/.credentials.json` or any token.
 - The server listens only on `127.0.0.1:4747` and makes no network requests.
+- Multi-PC sync is opt-in (only when the shared folder exists). It writes a summary of your history — no message text — to that local folder; your own cloud client (OneDrive, etc.) is what uploads it.
 
 If you find a way any of this is not true, that's a security issue.
 

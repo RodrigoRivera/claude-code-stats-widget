@@ -12,6 +12,7 @@ const path = require('path');
 const os = require('os');
 const readline = require('readline');
 const { exec } = require('child_process');
+const crypto = require('crypto');
 
 // ---- Configuración -------------------------------------------------------
 const PORT = Number(process.env.CLAUDE_STATS_PORT) || 4747;
@@ -23,8 +24,11 @@ const PROJECT_DIRS = [
 ];
 const LEDGER_DIR = path.join(CONFIG_DIR, 'claude-stats');
 const LEDGER_FILE = path.join(LEDGER_DIR, 'days.json');
+const CONFIG_FILE = path.join(LEDGER_DIR, 'config.json');
 const CACHE_MS = 20000;
 const NO_OPEN = process.argv.includes('--no-open');
+// --sync: actualiza el historial y el resumen de este PC en la carpeta compartida, y termina.
+const SYNC_ONLY = process.argv.includes('--sync');
 const URL_APP = `http://${HOST}:${PORT}`;
 
 // Nombre del saludo: CLAUDE_STATS_NAME, o si no el nombre de la cuenta de Claude
@@ -205,7 +209,8 @@ function merge(ledger, fromLogs) {
 // Junta proyectos cuyo nombre solo cambia en mayúsculas/minúsculas
 // (ej. "miapp" y "MiApp"). Gana el nombre con más tiempo.
 // Se aplica solo a la respuesta: days.json guarda los nombres originales.
-function mergeProjectCase(days) {
+// caseNames: { "miapp": "MiApp" } con el nombre ganador de cada proyecto.
+function caseNames(days) {
   const total = {};
   for (const d of Object.values(days)) {
     for (const [n, p] of Object.entries(d.projects || {})) total[n] = (total[n] || 0) + (p.minutes || 0);
@@ -215,12 +220,16 @@ function mergeProjectCase(days) {
     const k = n.toLowerCase();
     if (!(k in best) || m > total[best[k]]) best[k] = n;
   }
+  return best;
+}
+
+function mergeProjectCase(days, best = caseNames(days)) {
   const out = {};
   for (const [key, d] of Object.entries(days)) {
     if (!d.projects) { out[key] = d; continue; }
     const projects = {};
     for (const [n, p] of Object.entries(d.projects)) {
-      const name = best[n.toLowerCase()];
+      const name = best[n.toLowerCase()] || n;
       const q = projects[name];
       if (!q) {
         projects[name] = { ...p, sessions: [...(p.sessions || [])], hours: p.hours && [...p.hours], models: p.models && JSON.parse(JSON.stringify(p.models)) };
@@ -245,6 +254,124 @@ function mergeProjectCase(days) {
   return out;
 }
 
+// ---- Varios PCs (carpeta compartida, por ejemplo en OneDrive) -------------
+// config.json: { syncDir, deviceName, deviceId }. Se crea con los valores por defecto la
+// primera vez. deviceId no cambia aunque se renombre el PC: así un archivo viejo de este
+// mismo PC (con su nombre anterior) no se cuenta como otro PC.
+// CLAUDE_STATS_SYNC_DIR, CLAUDE_STATS_DEVICE y CLAUDE_STATS_DEVICE_ID los pisan (para pruebas).
+function readConfig() {
+  const defaults = {
+    syncDir: process.env.OneDrive ? path.join(process.env.OneDrive, 'claude-stats') : '',
+    deviceName: os.hostname(),
+  };
+  let cfg = null;
+  try { cfg = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8')); } catch (err) {
+    if (err.code !== 'ENOENT') console.warn('No pude leer', CONFIG_FILE, '—', err.message);
+    else cfg = { ...defaults };
+  }
+  // Un config.json dañado no se toca; si existe sin deviceId (o no existía), se completa.
+  if (cfg && typeof cfg === 'object' && !cfg.deviceId) {
+    cfg.deviceId = crypto.randomUUID();
+    try { fs.mkdirSync(LEDGER_DIR, { recursive: true }); fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2) + '\n'); } catch {}
+  }
+  cfg = cfg || {};
+  const syncDir = process.env.CLAUDE_STATS_SYNC_DIR ?? (typeof cfg.syncDir === 'string' ? cfg.syncDir : defaults.syncDir);
+  const deviceName = String(process.env.CLAUDE_STATS_DEVICE || cfg.deviceName || '').trim() || defaults.deviceName;
+  const deviceId = process.env.CLAUDE_STATS_DEVICE_ID || cfg.deviceId || '';
+  return { syncDir, deviceName, deviceId };
+}
+
+// Nombre de archivo de un PC: su nombre sin caracteres que Windows no acepta.
+const deviceFile = (name) => name.replace(/[\\/:*?"<>|\x00-\x1f]/g, '_') + '.json';
+const isDir = async (p) => { try { return (await fsp.stat(p)).isDirectory(); } catch { return false; } };
+
+// Guarda el historial de este PC en <syncDir>/<deviceName>.json, solo si cambió.
+// Se escribe primero fuera de la carpeta compartida y después se mueve, para que
+// OneDrive nunca suba un archivo a medio escribir.
+let lastSynced = { file: null, body: null };
+async function writeDeviceSummary(cfg, days) {
+  if (!cfg.syncDir || !(await isDir(cfg.syncDir))) return false;
+  const file = path.join(cfg.syncDir, deviceFile(cfg.deviceName));
+  // Se compara todo menos la hora: si cambian los días o el deviceId, se reescribe.
+  const body = JSON.stringify([cfg.deviceId, days]);
+  if (lastSynced.file !== file) {
+    let old = null;
+    try { const j = JSON.parse(await fsp.readFile(file, 'utf8')); old = JSON.stringify([j.deviceId, j.days]); } catch {}
+    lastSynced = { file, body: old };
+  }
+  if (body === lastSynced.body) return false;
+  await fsp.mkdir(LEDGER_DIR, { recursive: true });
+  const tmp = path.join(LEDGER_DIR, deviceFile(cfg.deviceName) + '.tmp');
+  await fsp.writeFile(tmp, JSON.stringify({ version: 1, deviceName: cfg.deviceName, deviceId: cfg.deviceId, updatedAt: new Date().toISOString(), days }));
+  try {
+    await fsp.rename(tmp, file);
+  } catch (err) {
+    if (err.code !== 'EXDEV') throw err;
+    // Carpeta compartida en otra unidad: se copia al lado y se renombra ahí.
+    await fsp.copyFile(tmp, file + '.tmp');
+    await fsp.rename(file + '.tmp', file);
+    await fsp.unlink(tmp);
+  }
+  lastSynced.body = body;
+  return true;
+}
+
+// Resúmenes de los otros PCs. El propio no se lee (sus datos locales ya están), y un
+// archivo solo vale si el nombre guardado adentro coincide con el del archivo: así se
+// ignoran las copias de conflicto de OneDrive ("PC-PC.json") y archivos ajenos.
+// Un archivo con el deviceId de este PC pero otro nombre es de antes de renombrarlo:
+// no se cuenta y se borra (es de este mismo PC).
+async function readOtherDevices(cfg) {
+  const out = {};
+  if (!cfg.syncDir) return out;
+  let files;
+  try { files = await fsp.readdir(cfg.syncDir); } catch { return out; }
+  const own = cfg.deviceName.toLowerCase();
+  for (const f of files) {
+    if (!f.toLowerCase().endsWith('.json')) continue;
+    let j;
+    try { j = JSON.parse(await fsp.readFile(path.join(cfg.syncDir, f), 'utf8')); } catch { continue; } // a medio sincronizar: la próxima vez
+    if (!j || typeof j.deviceName !== 'string' || !j.days || typeof j.days !== 'object') continue;
+    if (deviceFile(j.deviceName).toLowerCase() !== f.toLowerCase() || j.deviceName.toLowerCase() === own) continue;
+    if (cfg.deviceId && j.deviceId === cfg.deviceId) {
+      try { await fsp.unlink(path.join(cfg.syncDir, f)); } catch {}
+      continue;
+    }
+    out[j.deviceName] = { updatedAt: j.updatedAt || null, days: j.days };
+  }
+  return out;
+}
+
+// Suma un día (o un proyecto de un día) dentro de otro, sin repetir sesiones.
+function addInto(t, s) {
+  t.tokens += s.tokens || 0;
+  t.messages += s.messages || 0;
+  t.minutes = Math.round((t.minutes + (s.minutes || 0)) * 10) / 10;
+  if (s.sessions && s.sessions.length) t.sessions = [...new Set([...t.sessions, ...s.sessions])];
+  if (s.hours) s.hours.forEach((v, i) => (t.hours[i] += v || 0));
+  for (const [m, v] of Object.entries(s.models || {})) {
+    const q = t.models[m] || (t.models[m] = { tokens: 0, messages: 0 });
+    q.tokens += v.tokens || 0; q.messages += v.messages || 0;
+  }
+}
+const emptyDay = () => ({ tokens: 0, messages: 0, minutes: 0, sessions: [], hours: new Array(24).fill(0), models: {} });
+
+// Junta los historiales de varios PCs día por día (tokens, mensajes, minutos, horas,
+// modelos y proyectos). Días antiguos sin `projects` siguen sin detalle por proyecto.
+function sumDevices(list) {
+  const out = {};
+  for (const days of list) {
+    for (const [k, d] of Object.entries(days)) {
+      const t = out[k] || (out[k] = emptyDay());
+      addInto(t, d);
+      if (!d.projects) continue;
+      t.projects = t.projects || {};
+      for (const [n, p] of Object.entries(d.projects)) addInto(t.projects[n] || (t.projects[n] = emptyDay()), p);
+    }
+  }
+  return out;
+}
+
 let cache = null;
 let cacheAt = 0;
 let pending = null;
@@ -253,10 +380,29 @@ async function getStats() {
   if (cache && Date.now() - cacheAt < CACHE_MS) return cache;
   if (pending) return pending;
   pending = (async () => {
+    const cfg = readConfig();
     const [ledger, logs] = await Promise.all([readLedger(), readLogs()]);
     const days = merge(ledger, logs.days);
     try { await writeLedger(days); } catch (err) { console.warn('No pude guardar el historial:', err.message); }
-    cache = { name: userName(), days: mergeProjectCase(days), files: logs.files, source: PROJECT_DIRS[0], generatedAt: new Date().toISOString() };
+    let synced = false;
+    try { synced = await writeDeviceSummary(cfg, days); } catch (err) { console.warn('No pude guardar el resumen en la carpeta compartida:', err.message); }
+    // Este PC + los demás. Con un solo PC, los días quedan tal cual (como antes).
+    const others = await readOtherDevices(cfg);
+    const multi = Object.keys(others).length > 0;
+    const all = { [cfg.deviceName]: { local: true, updatedAt: new Date().toISOString(), days }, ...others };
+    const total = multi ? sumDevices(Object.values(all).map((d) => d.days)) : days;
+    // Mismo nombre ganador para mayúsculas/minúsculas en el total y en cada PC.
+    const names = caseNames(total);
+    const devices = {};
+    for (const [n, d] of Object.entries(all)) {
+      devices[n] = { local: !!d.local, updatedAt: d.updatedAt };
+      if (multi) devices[n].days = mergeProjectCase(d.days, names); // con un solo PC, sus días son los de `days`
+    }
+    cache = {
+      name: userName(), days: mergeProjectCase(total, names), devices, device: cfg.deviceName,
+      sync: { dir: (await isDir(cfg.syncDir)) ? cfg.syncDir : null, wrote: synced },
+      files: logs.files, source: PROJECT_DIRS[0], generatedAt: new Date().toISOString(),
+    };
     cacheAt = Date.now();
     return cache;
   })();
@@ -326,10 +472,21 @@ server.on('error', (err) => {
   }
 });
 
-server.listen(PORT, HOST, () => {
-  console.log(`Claude Stats en ${URL_APP}`);
-  console.log(`Leyendo registros de: ${PROJECT_DIRS[0]}`);
-  getStats().then((s) => console.log(`Listo: ${Object.keys(s.days).length} días con actividad, ${s.files} archivos.`))
-    .catch((e) => console.warn(e.message));
-  openWindow();
-});
+if (SYNC_ONLY) {
+  // Sin servidor ni ventana: lo usa la tarea programada (instalar-sync.ps1).
+  getStats().then((s) => {
+    const otros = Object.keys(s.devices).filter((n) => n !== s.device);
+    console.log(`Historial: ${Object.keys(s.days).length} días · PC: ${s.device}`);
+    console.log(!s.sync.dir ? 'Sin carpeta compartida: solo se actualizó el historial local.'
+      : `${s.sync.wrote ? 'Resumen actualizado' : 'Resumen sin cambios'} en ${s.sync.dir}` + (otros.length ? ` · otros PCs: ${otros.join(', ')}` : ''));
+    process.exit(0);
+  }).catch((e) => { console.error(e.message); process.exit(1); });
+} else {
+  server.listen(PORT, HOST, () => {
+    console.log(`Claude Stats en ${URL_APP}`);
+    console.log(`Leyendo registros de: ${PROJECT_DIRS[0]}`);
+    getStats().then((s) => console.log(`Listo: ${Object.keys(s.days).length} días con actividad, ${s.files} archivos.`))
+      .catch((e) => console.warn(e.message));
+    openWindow();
+  });
+}

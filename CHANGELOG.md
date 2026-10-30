@@ -5,6 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-30
+
+### Added
+- **Several PCs, one view**: with a shared folder (by default `OneDrive\claude-stats`), each PC writes a summary of its history and reads the others'. `/api/stats` adds them up per day (tokens, messages, active time, hours, models and projects) without repeating sessions, and returns `devices`. Off until the folder exists.
+- Panel: **All PCs / <PC>** selector (only with more than one PC), and the heatmap tooltip shows how much each PC contributed.
+- `node server.js --sync` updates the history and this PC's summary, then exits; `Abrir Claude Stats.vbs /sync` runs it with no windows.
+- `instalar-sync.ps1` registers that sync in Windows Task Scheduler (at sign-in and every hour); `-Quitar` removes it.
+- `config.json` with `syncDir`, `deviceName` and a stable `deviceId`, so renaming a PC doesn't count it twice. OneDrive conflict copies are ignored.
+
 ## [1.1.0] - 2026-10-25
 
 ### Added
@@ -31,6 +40,7 @@ First public release.
 - Windows launchers: open the widget (or the panel in Edge), stop everything, and create a desktop shortcut.
 - Zero-dependency Node.js server that listens only on `127.0.0.1` and never reads credentials.
 
-[Unreleased]: https://github.com/RodrigoRivera/claude-code-stats-widget/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/RodrigoRivera/claude-code-stats-widget/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/RodrigoRivera/claude-code-stats-widget/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/RodrigoRivera/claude-code-stats-widget/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/RodrigoRivera/claude-code-stats-widget/releases/tag/v1.0.0

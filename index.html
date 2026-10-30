@@ -57,6 +57,8 @@
   .pick:hover { color: var(--text); }
   .pick:focus-visible { outline: 2px solid var(--l3); outline-offset: 1px; }
   .pick.on { background-color: var(--pill-on); color: var(--text); font-weight: 600; }
+  .pick[hidden] { display: none; }
+  .tip .pcs { display: block; margin-top: 2px; }
   .pick option { background: #1d1e21; color: var(--text); font-weight: 400; }
   .seg { display: flex; gap: 4px; }
   .seg button {
@@ -233,6 +235,7 @@
         <button data-tab="proyectos" data-i18n="tabProyectos">Proyectos</button>
       </div>
       <div class="right">
+        <select class="pick" id="device" aria-label="Filtrar por PC" data-i18n-aria="filterDevice" hidden></select>
         <select class="pick" id="project" aria-label="Filtrar por proyecto" data-i18n-aria="filterProject">
           <option value="">Todos los proyectos</option>
         </select>
@@ -337,7 +340,7 @@ const T = {
   es: {
     hello: '¿Qué sigue?', helloName: '¿Qué sigue, {name}?',
     tabResumen: 'Resumen', tabModelos: 'Modelos', tabProyectos: 'Proyectos', wTabTotal: 'Total',
-    allProjects: 'Todos los proyectos', filterProject: 'Filtrar por proyecto', rAll: 'Todo', wToday: 'Hoy',
+    allProjects: 'Todos los proyectos', filterProject: 'Filtrar por proyecto', allDevices: 'Todos los PCs', filterDevice: 'Filtrar por PC', thisPc: '{name} (este PC)', rAll: 'Todo', wToday: 'Hoy',
     sessions: 'Sesiones', messages: 'Mensajes', totalTokens: 'Tokens totales', activeDays: 'Días activos', peakHour: 'Hora pico', favModel: 'Modelo favorito',
     activeTime: 'Tiempo activo', curStreak: 'Racha actual', bestStreak: 'Mejor racha', peakDayHour: 'Día y hora pico', streak: 'Racha',
     sortTime: 'Tiempo', sortSessions: 'Sesiones', color: 'Color:', mTokens: 'tokens', mTime: 'tiempo',
@@ -360,7 +363,7 @@ const T = {
   en: {
     hello: "What's next?", helloName: "What's next, {name}?",
     tabResumen: 'Overview', tabModelos: 'Models', tabProyectos: 'Projects', wTabTotal: 'Total',
-    allProjects: 'All projects', filterProject: 'Filter by project', rAll: 'All', wToday: 'Today',
+    allProjects: 'All projects', filterProject: 'Filter by project', allDevices: 'All PCs', filterDevice: 'Filter by PC', thisPc: '{name} (this PC)', rAll: 'All', wToday: 'Today',
     sessions: 'Sessions', messages: 'Messages', totalTokens: 'Total tokens', activeDays: 'Active days', peakHour: 'Peak hour', favModel: 'Favorite model',
     activeTime: 'Active time', curStreak: 'Current streak', bestStreak: 'Best streak', peakDayHour: 'Peak day & hour', streak: 'Streak',
     sortTime: 'Time', sortSessions: 'Sessions', color: 'Color:', mTokens: 'tokens', mTime: 'time',
@@ -404,9 +407,12 @@ try { if (localStorage.getItem('metric') === 'minutes') state.metric = 'minutes'
 // Proyecto elegido en el filtro ('' = todos). También se recuerda.
 state.project = '';
 try { state.project = localStorage.getItem('project') || ''; } catch {}
+// PC elegido en el filtro ('' = todos los PCs). También se recuerda.
+state.device = '';
+try { state.device = localStorage.getItem('device') || ''; } catch {}
 // Modo widget (/?widget=1): siempre todos los proyectos y color por tokens.
 const WIDGET = new URLSearchParams(location.search).get('widget') === '1';
-if (WIDGET) { document.documentElement.classList.add('widget'); state.project = ''; state.metric = 'tokens'; }
+if (WIDGET) { document.documentElement.classList.add('widget'); state.project = ''; state.device = ''; state.metric = 'tokens'; }
 // Pestaña del widget (hoy / proyectos / total). Se recuerda.
 state.wtab = 'hoy';
 try { const t = localStorage.getItem('wtab'); if (['hoy', 'proyectos', 'total'].includes(t)) state.wtab = t; } catch {}
@@ -451,15 +457,27 @@ function fmtDate(d) {
     : `${L.days[d.getDay()]} ${d.getDate()} ${L.months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+// Días de todos los PCs, o solo los del PC elegido en el filtro.
+function baseDays() {
+  const dv = state.device && state.data.devices && state.data.devices[state.device];
+  return dv && dv.days ? dv.days : state.data.days;
+}
+// Nombres de los PCs con datos propios (solo si hay más de uno), este PC primero.
+function deviceNames() {
+  const all = (state.data && state.data.devices) || {};
+  const names = Object.keys(all).filter((n) => all[n].days);
+  return names.sort((a, b) => (all[b].local ? 1 : 0) - (all[a].local ? 1 : 0) || a.localeCompare(b));
+}
+
 // Días que ven todas las pestañas: todos, o solo los números del proyecto elegido.
 // Días antiguos sin `projects` no aparecen al filtrar; sin hours/models cuentan como vacíos.
-let viewCache = { data: null, project: null, days: null };
+let viewCache = { data: null, project: null, device: null, days: null };
 function viewDays() {
   const data = state.data;
-  if (!state.project) return data.days;
-  if (viewCache.data === data && viewCache.project === state.project) return viewCache.days;
+  if (!state.project) return baseDays();
+  if (viewCache.data === data && viewCache.project === state.project && viewCache.device === state.device) return viewCache.days;
   const out = {};
-  for (const [k, d] of Object.entries(data.days)) {
+  for (const [k, d] of Object.entries(baseDays())) {
     const p = d.projects && d.projects[state.project];
     if (!p) continue;
     out[k] = {
@@ -468,7 +486,7 @@ function viewDays() {
       projects: { [state.project]: p },
     };
   }
-  viewCache = { data, project: state.project, days: out };
+  viewCache = { data, project: state.project, device: state.device, days: out };
   return out;
 }
 
@@ -476,7 +494,7 @@ function viewDays() {
 // los nombres, para no cerrar el menú si está abierto durante la recarga.
 function fillProjects() {
   const total = {};
-  for (const d of Object.values(state.data.days)) {
+  for (const d of Object.values(baseDays())) {
     for (const [n, p] of Object.entries(d.projects || {})) total[n] = (total[n] || 0) + (p.minutes || 0);
   }
   const names = Object.keys(total).sort((a, b) => total[b] - total[a] || a.localeCompare(b));
@@ -489,6 +507,34 @@ function fillProjects() {
   }
   sel.value = state.project;
   sel.classList.toggle('on', !!state.project);
+}
+
+// Selector "Todos los PCs / <PC>": solo aparece si la carpeta compartida tiene más de un PC.
+function fillDevices() {
+  const sel = $('device');
+  const names = deviceNames();
+  if (state.device && !names.includes(state.device)) state.device = '';
+  sel.hidden = names.length < 2 || WIDGET;
+  const local = state.data.device;
+  const sig = LANG + '\n' + names.join('\n');
+  if (sel.dataset.sig !== sig) {
+    sel.innerHTML = `<option value="">${esc(t('allDevices'))}</option>` + names.map((n) =>
+      `<option value="${esc(n)}">${esc(n === local ? t('thisPc', { name: n }) : n)}</option>`).join('');
+    sel.dataset.sig = sig;
+  }
+  sel.value = state.device;
+  sel.classList.toggle('on', !!state.device);
+}
+
+// Cuánto aportó cada PC un día (con el proyecto del filtro, si hay), según la métrica del color.
+function devicesOfDay(k) {
+  if (state.device) return [];
+  const all = state.data.devices || {};
+  return deviceNames().map((n) => {
+    let d = all[n].days[k];
+    if (d && state.project) d = d.projects && d.projects[state.project];
+    return [n, d ? (state.metric === 'minutes' ? d.minutes || 0 : d.tokens || 0) : 0];
+  }).filter(([, v]) => v > 0);
 }
 
 function today0() { const t = new Date(); t.setHours(0, 0, 0, 0); return t; }
@@ -861,6 +907,7 @@ async function load(refresh) {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     state.data = data;
+    fillDevices();
     fillProjects();
     $('hello').textContent = helloText();
     if (!Object.keys(data.days).length) {
@@ -896,6 +943,15 @@ addEventListener('keydown', (e) => { if (e.key === 'Escape' && state.selected) s
 document.querySelectorAll('#metric button').forEach((b) => b.onclick = () => {
   state.metric = b.dataset.metric;
   try { localStorage.setItem('metric', state.metric); } catch {}
+  render();
+});
+
+// Filtro por PC: recalcula todas las pestañas (y la lista de proyectos de ese PC)
+$('device').addEventListener('change', (e) => {
+  state.device = e.target.value;
+  e.target.classList.toggle('on', !!state.device);
+  try { localStorage.setItem('device', state.device); } catch {}
+  fillProjects();
   render();
 });
 
@@ -948,7 +1004,9 @@ document.addEventListener('mousemove', (e) => {
     if (state.metric === 'minutes') { if (d && d.messages) extra.push(fmtTok(tok) + ' tokens'); }
     else if (min > 0) extra.push(fmtDur(min));
     if (top) extra.push(esc(top[0]));
-    tip.innerHTML = (state.metric === 'minutes' ? `<b>${fmtDur(min)}</b> ${t('active')}` : `<b>${fmtInt(tok)}</b> tokens`) + `<br><span>${extra.join(' · ')}</span>`;
+    const pcs = devicesOfDay(c.dataset.k).map(([n, v]) => `${esc(n)}: ${state.metric === 'minutes' ? fmtDur(v) : fmtTok(v)}`);
+    tip.innerHTML = (state.metric === 'minutes' ? `<b>${fmtDur(min)}</b> ${t('active')}` : `<b>${fmtInt(tok)}</b> tokens`) + `<br><span>${extra.join(' · ')}</span>`
+      + (pcs.length > 1 ? `<span class="pcs">${pcs.join(' · ')}</span>` : '');
   }
   const w = tip.offsetWidth, h = tip.offsetHeight;
   let x = e.clientX + 14, yy = e.clientY - h - 12;
@@ -1015,7 +1073,7 @@ function setLang(l, guardar = true, avisar = true) {
   applyLang();
   $('hello').textContent = helloText();
   delete $('wprojects').dataset.html;
-  if (state.data) { fillProjects(); render(); }
+  if (state.data) { fillDevices(); fillProjects(); render(); }
 }
 document.querySelectorAll('#langs button').forEach((b) => b.onclick = () => setLang(b.dataset.lang));
 

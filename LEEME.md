@@ -23,6 +23,7 @@ Réplica local del panel de uso que tenía Claude Code en la pantalla de "Nueva 
 - **Modelos**: tokens y respuestas por modelo, con su porcentaje.
 - **Proyectos**: tiempo activo total, racha actual, mejor racha, día y hora pico, y la lista de proyectos con su tiempo, porcentaje, tokens y sesiones. Se puede ordenar por tiempo, tokens o sesiones. Clic en un proyecto: mini heatmap de sus últimas 12 semanas.
 - **Filtros** en la barra de arriba: rango (Todo / 30d / 7d) y proyecto ("Todos los proyectos" o uno solo). El proyecto elegido y el color del heatmap se recuerdan para la próxima vez.
+- **Varios PCs**: si usas Claude Code en más de un computador, con una carpeta compartida de OneDrive suma el uso de todos y muestra cuánto aportó cada uno (ver *Varios PCs* más abajo).
 - **Idioma**: español o inglés. Por defecto sigue el idioma de Windows (español si es `es-*`; si no, inglés). Se cambia con **Español · English** debajo del panel, o con **Idioma** en el menú de la bandeja del widget; el panel y el widget se cambian juntos. También se puede forzar en la dirección: `http://127.0.0.1:4747/?lang=es`.
 
 - **Widget de escritorio**: una cajita semitransparente con tres pestañitas: **Resumen** (heatmap de las últimas ~16 semanas, tokens, racha actual y tiempo activo), **Proyectos** y **Total**, y un selector de período **Hoy · 30d · Todo** (ver más abajo).
@@ -92,17 +93,47 @@ Si Windows muestra *"Windows protegió su PC"*, haz clic en **Más información*
 
 Para probar el modo compacto sin Electron: http://127.0.0.1:4747/?widget=1 (ahí un clic lleva al panel).
 
+## Varios PCs (sincronizar con OneDrive)
+Si usas Claude Code en más de un computador, Claude Stats puede sumar el uso de todos. Usa una carpeta compartida de OneDrive: cada PC deja ahí un resumen de su historial y lee el de los demás.
+
+Está **apagado** hasta que exista la carpeta `OneDrive\claude-stats`. Sin ella, todo funciona igual que siempre, solo con los datos de ese PC.
+
+### En el primer PC
+1. Revisa que OneDrive tenga tu cuenta iniciada.
+2. En la carpeta de Claude Stats, abre PowerShell y corre:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File instalar-sync.ps1
+   ```
+   Crea la carpeta, registra una tarea que actualiza el resumen de este PC al iniciar sesión y cada hora (sin abrir ventanas) y hace la primera sincronización.
+
+### En el segundo PC
+1. Instala Claude Stats como siempre (pasos 1 a 3 de la *Instalación*).
+2. Inicia sesión en OneDrive con **la misma cuenta** y espera a que aparezca `OneDrive\claude-stats` con el archivo del primer PC.
+3. *(Opcional)* Ponle un nombre a cada PC: abre `%USERPROFILE%\.claude\claude-stats\config.json` y cambia `"deviceName"` (por ejemplo `"Notebook"`). Renombrar no duplica nada: el archivo viejo se reemplaza.
+4. Corre `instalar-sync.ps1` también ahí, igual que en el primero.
+5. Abre el panel completo: junto al filtro de proyectos aparece el selector **Todos los PCs / <PC>**, y al pasar el mouse por un día ves cuánto aportó cada PC.
+
+### Bueno saber
+- Cada PC guarda su historial completo en `<carpeta>\<nombre del PC>.json`: fechas, carpetas de proyecto, modelos y conteos; nunca el texto de los mensajes. OneDrive lo sube a tu cuenta.
+- Los totales se suman sin repetir sesiones. Las copias de conflicto de OneDrive se ignoran.
+- Con el widget abierto, el resumen también se actualiza cada minuto; la tarea programada cubre los ratos en que está cerrado.
+- Otra carpeta (Google Drive, Dropbox, una carpeta de red): cambia `"syncDir"` en `config.json`.
+- Quitar la tarea: `instalar-sync.ps1 -Quitar`. Dejar de sincronizar: borra la carpeta o pon `"syncDir": ""`.
+- El widget siempre muestra todos los PCs; el selector está en el panel completo.
+
 ## Avanzado
 - **Solo el panel, sin widget:** corre `node server.js` y abre <http://127.0.0.1:4747> (`--no-open` lo levanta sin abrir ventana). El servidor funciona en cualquier sistema con Node.js.
 - **El widget a mano:** `cd widget`, `npm install`, `npm start`.
 - **El acceso directo a mano:** `Crear acceso directo.vbs` crea el ícono del escritorio y pregunta si quieres que el servidor solo (sin ventana) arranque con Windows; si lo vuelves a ejecutar y dices que no, se quita. O bien: `Win + R` → `shell:startup` → un acceso directo a `Abrir Claude Stats.vbs` con ` /fondo` al final del destino.
-- **Opciones del lanzador:** `Abrir Claude Stats.vbs /panel` abre el panel en Edge sin widget; `/fondo` arranca solo el servidor.
+- **Opciones del lanzador:** `Abrir Claude Stats.vbs /panel` abre el panel en Edge sin widget; `/fondo` arranca solo el servidor; `/sync` actualiza el resumen para varios PCs y termina, sin ventanas.
+- **`node server.js --sync`**: actualiza el historial y el resumen de este PC en la carpeta compartida y termina (es lo que corre la tarea programada).
 - Conviene anclar el ícono del escritorio y no la ventana de Edge del panel: la ventana anclada abre Edge directo y, si el servidor no está andando, muestra un error.
 
 ## De dónde salen los datos
 - Lee los registros de Claude Code en `%USERPROFILE%\.claude\projects\` (solo fechas, carpeta, modelo y tokens; nunca el texto de los mensajes). Para el saludo lee solo el nombre de tu cuenta (`displayName`) de `%USERPROFILE%\.claude.json`. Nunca lee tus credenciales.
 - Guarda su propio historial en `%USERPROFILE%\.claude\claude-stats\days.json`, así los días no desaparecen cuando Claude Code borra registros antiguos.
-- Nada sale de tu computador: el servidor solo escucha en `127.0.0.1:4747`.
+- Ajustes para varios PCs: `%USERPROFILE%\.claude\claude-stats\config.json` (`syncDir`, `deviceName` y un `deviceId` interno).
+- Nada sale de tu computador: el servidor solo escucha en `127.0.0.1:4747`. La excepción es si activas *Varios PCs*: un resumen de tu historial (sin el texto de los mensajes) va a la carpeta que elegiste, y tu servicio en la nube (OneDrive, etc.) lo sube a tu cuenta.
 
 ## Cómo se calcula
 - **Tokens totales** suma entrada, salida y caché (lectura y escritura), por eso las cifras son grandes.
